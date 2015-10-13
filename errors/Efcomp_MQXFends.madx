@@ -1,0 +1,90 @@
+errorgenerate_abs(rref,klref,order,isinv): macro={
+!magnetic measurement conventions
+!apply sign change to mesaured field quality when beam 1 (or2)  enters in
+!aperture from connection side
+!don't apply changes to mesaured field quality when beam 4 exit from connection sidea
+!order 0: dipole, 1: quadrupole, etc...
+
+magnetic_sign=0;
+if (magnetic_sign==1){yfact=-1;} else {yfact=1;}; ! magnetic measurment
+if (mylhcbeam>2){yfact=yfact*(-1);};
+if (isinv==1){yfact=yfact*(-1);};
+
+erfact1=klref*(rref*yfact)^(order);
+erfact2=erfact1*1/rref;
+erfact3=erfact2*2/rref; erfact4=erfact3*3/rref;
+erfact5=erfact4*4/rref; erfact6=erfact5*5/rref;
+erfact7=erfact6*6/rref; erfact8=erfact7*7/rref;
+erfact9=erfact8*8/rref; erfact10=erfact9*9/rref;
+erfact11=erfact10*10/rref; erfact12=erfact11*11/rref;
+erfact13=erfact12*12/rref; erfact14=erfact13*13/rref;
+erfact15=erfact14*14/rref;
+
+efcomp,
+dkn:={ b1ssr *erfact1 , yfact*b2ssr *erfact2 , b3ssr *erfact3 ,
+       yfact*b4ssr *erfact4 , b5ssr *erfact5 , yfact*b6ssr *erfact6 ,
+       b7ssr *erfact7 , yfact*b8ssr *erfact8 , b9ssr *erfact9 ,
+       yfact*b10ssr*erfact10, b11ssr*erfact11, yfact*b12ssr*erfact12,
+       b13ssr*erfact13, yfact*b14ssr*erfact14, b15ssr*erfact15 },
+dks:={ yfact*a1ssr *erfact1 , a2ssr *erfact2 , yfact*a3ssr *erfact3 ,
+       a4ssr *erfact4 , yfact*a5ssr *erfact5 , a6ssr *erfact6 ,
+       yfact*a7ssr *erfact7 , a8ssr *erfact8 , yfact*a9ssr *erfact9 ,
+       a10ssr*erfact10, yfact*a11ssr*erfact11, a12ssr*erfact12,
+       yfact*a13ssr*erfact13, a14ssr*erfact14, yfact*a15ssr*erfact15 };
+};
+
+
+generate_fringe(eee,ttt,llrr,ks,kref,isinv):macro={
+klref=kref*l.ttt*ks;
+value,klref,Rr_ttt,l.ttt;
+exec,new_magnetfamily(ttt);
+exec,new_magnetindividual(ttt,iap);
+select,flag=error,clear;select,flag=error,pattern="^eee..llrr$";
+print,text="^eee..llrr$";
+exec,errorgenerate_abs(Rr_ttt,klref,1,isinv);
+};
+
+generate_fringe_lr(eee,ttt,ks,kref,isinv):macro={
+print,text="eee,tttcs,FL,kref,isinv";
+if(isinv==0){
+exec,generate_fringe(eee,tttcs,FL,ks,kref,isinv);
+exec,generate_fringe(eee,tttnc,FR,ks,kref,isinv);};
+if(isinv==1){
+exec,generate_fringe(eee,tttnc,FL,ks,kref,isinv);
+exec,generate_fringe(eee,tttcs,FR,ks,kref,isinv);};
+};
+
+
+!IP =Q1a||Q1b=    =Q2a||Q2b=   =Q3a||Q3b=
+!assumes:
+! e.g. b8_MQXFnc_inj, b8_MQXFcs_inj
+! e.g. l.MQXFnc, l.MQXFcs, Rr_MQXFcs, Rr_MQXFnc
+isinv=0;ks= bv_aux;exec,generate_fringe_lr(MQXFA.A1R1,MQXF,ks,kqx1.r1,isinv);
+isinv=1;ks= bv_aux;exec,generate_fringe_lr(MQXFA.B1R1,MQXF,ks,kqx1.r1,isinv);
+isinv=0;ks=-bv_aux;exec,generate_fringe_lr(MQXFB.A2R1,MQXF,ks,kqx2a.r1,isinv);
+isinv=1;ks=-bv_aux;exec,generate_fringe_lr(MQXFB.B2R1,MQXF,ks,kqx2b.r1,isinv);
+isinv=0;ks= bv_aux;exec,generate_fringe_lr(MQXFA.A3R1,MQXF,ks,kqx3.r1,isinv);
+isinv=1;ks= bv_aux;exec,generate_fringe_lr(MQXFA.B3R1,MQXF,ks,kqx3.r1,isinv);
+
+isinv=0;ks= bv_aux;exec,generate_fringe_lr(MQXFA.A1R5,MQXF,ks,kqx1.r5,isinv);
+isinv=1;ks= bv_aux;exec,generate_fringe_lr(MQXFA.B1R5,MQXF,ks,kqx1.r5,isinv);
+isinv=0;ks=-bv_aux;exec,generate_fringe_lr(MQXFB.A2R5,MQXF,ks,kqx2a.r5,isinv);
+isinv=1;ks=-bv_aux;exec,generate_fringe_lr(MQXFB.B2R5,MQXF,ks,kqx2b.r5,isinv);
+isinv=0;ks= bv_aux;exec,generate_fringe_lr(MQXFA.A3R5,MQXF,ks,kqx3.r5,isinv);
+isinv=1;ks= bv_aux;exec,generate_fringe_lr(MQXFA.B3R5,MQXF,ks,kqx3.r5,isinv);
+
+isinv=1;ks= bv_aux;exec,generate_fringe_lr(MQXFA.A1L1,MQXF,ks,kqx1.l1,isinv);
+isinv=0;ks= bv_aux;exec,generate_fringe_lr(MQXFA.B1L1,MQXF,ks,kqx1.l1,isinv);
+isinv=1;ks=-bv_aux;exec,generate_fringe_lr(MQXFB.A2L1,MQXF,ks,kqx2a.l1,isinv);
+isinv=0;ks=-bv_aux;exec,generate_fringe_lr(MQXFB.B2L1,MQXF,ks,kqx2b.l1,isinv);
+isinv=1;ks= bv_aux;exec,generate_fringe_lr(MQXFA.A3L1,MQXF,ks,kqx3.l1,isinv);
+isinv=0;ks= bv_aux;exec,generate_fringe_lr(MQXFA.B3L1,MQXF,ks,kqx3.l1,isinv);
+
+isinv=1;ks= bv_aux;exec,generate_fringe_lr(MQXFA.A1L5,MQXF,ks,kqx1.l5,isinv);
+isinv=0;ks= bv_aux;exec,generate_fringe_lr(MQXFA.B1L5,MQXF,ks,kqx1.l5,isinv);
+isinv=1;ks=-bv_aux;exec,generate_fringe_lr(MQXFB.A2L5,MQXF,ks,kqx2a.l5,isinv);
+isinv=0;ks=-bv_aux;exec,generate_fringe_lr(MQXFB.B2L5,MQXF,ks,kqx2b.l5,isinv);
+isinv=1;ks= bv_aux;exec,generate_fringe_lr(MQXFA.A3L5,MQXF,ks,kqx3.l5,isinv);
+isinv=0;ks= bv_aux;exec,generate_fringe_lr(MQXFA.B3L5,MQXF,ks,kqx3.l5,isinv);
+
+
