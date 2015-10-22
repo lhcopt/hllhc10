@@ -479,14 +479,14 @@ MCSSX3  : MULTIPOLE , Lrad := l.MCSSX3  ; ! (a3)
 Kmax_MCBXFA:= 4.5000 / l.MCBXFA               ;!4.5000Tm@50mm
 Rref_mpcorr = 0.05; !50mm reference radius for multipole correctors
 Kmax_MCQSX3:= 1.0000 / l.MCQSX3/Rref_mpcorr         ;!1.0000Tm@50mm
-Kmax_MCTXF := 0.0860 / l.MCTXF /Rref_mpcorr^5 * 120.;!0.0860Tm@50mm
-Kmax_MCTSXF:= 0.0170 / l.MCTSXF/Rref_mpcorr^5 * 120.;!0.0170Tm@50mm
-Kmax_MCDXF := 0.0250 / l.MCDXF /Rref_mpcorr^4 *  24.;!0.0250Tm@50mm
-Kmax_MCDSXF:= 0.0250 / l.MCDSXF/Rref_mpcorr^4 *  24.;!0.0250Tm@50mm
-Kmax_MCOXF := 0.0460 / l.MCOXF /Rref_mpcorr^3 *   6.;!0.0460Tm@50mm
-Kmax_MCOSXF:= 0.0460 / l.MCOSXF/Rref_mpcorr^3 *   6.;!0.0460Tm@50mm
-Kmax_MCSXF := 0.0630 / l.MCSXF /Rref_mpcorr^2 *   2.;!0.0630Tm@50mm
-Kmax_MCSSXF:= 0.0630 / l.MCSSXF/Rref_mpcorr^2 *   2.;!0.0630Tm@50mm
+Kmax_MCTX3 := 0.0860 / l.MCTX3 /Rref_mpcorr^5 * 120.;!0.0860Tm@50mm
+Kmax_MCTSX3:= 0.0170 / l.MCTSX3/Rref_mpcorr^5 * 120.;!0.0170Tm@50mm
+Kmax_MCDX3 := 0.0250 / l.MCDX3 /Rref_mpcorr^4 *  24.;!0.0250Tm@50mm
+Kmax_MCDSX3:= 0.0250 / l.MCDSX3/Rref_mpcorr^4 *  24.;!0.0250Tm@50mm
+Kmax_MCOX3 := 0.0460 / l.MCOX3 /Rref_mpcorr^3 *   6.;!0.0460Tm@50mm
+Kmax_MCOSX3:= 0.0460 / l.MCOSX3/Rref_mpcorr^3 *   6.;!0.0460Tm@50mm
+Kmax_MCSX3 := 0.0630 / l.MCSX3 /Rref_mpcorr^2 *   2.;!0.0630Tm@50mm
+Kmax_MCSSX3:= 0.0630 / l.MCSSX3/Rref_mpcorr^2 *   2.;!0.0630Tm@50mm
 
 
 Kmin_MCBXFA := -Kmax_MCBXFA ;
