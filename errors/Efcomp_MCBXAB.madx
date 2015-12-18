@@ -1,0 +1,144 @@
+! F.F Van der Veken 2015
+! Generation of errors for the corrector magnets in Q2, Q3 and CP.
+
+
+! Connections for the right side of IP: 	IP  (FBa Q2a) (Q2b FBb) (Q3) (FA ..)     => only FBb needs inversion
+! Connections for the left side of IP: inverse of above
+! Summarising:
+! a2L: 1,  a2R: 0,  b2L: 0,  b2R: 1,  3L: 1,  3R:  0
+
+
+! Load error routine from R. De Maria
+errorgenerate_abs(rref,klref,order,isinv): macro={
+!magnetic measurement conventions
+!apply sign change to mesaured field quality when beam 1 (or2)  enters in
+!aperture from connection side
+!don't apply changes to mesaured field quality when beam 4 exit from connection sidea
+!order 0: dipole, 1: quadrupole, etc...
+
+magnetic_sign=0;
+if (magnetic_sign==1){yfact=-1;} else {yfact=1;}; ! magnetic measurment
+if (mylhcbeam>2){yfact=yfact*(-1);};
+if (isinv==1){yfact=yfact*(-1);};
+sgn_rref=rref/(abs(rref));
+if (rref<0){rref=rref*(-1);};
+
+erfact1=klref*(rref*yfact)^(order)*sgn_rref;
+erfact2=erfact1*1/rref;
+erfact3=erfact2*2/rref; erfact4=erfact3*3/rref;
+erfact5=erfact4*4/rref; erfact6=erfact5*5/rref;
+erfact7=erfact6*6/rref; erfact8=erfact7*7/rref;
+erfact9=erfact8*8/rref; erfact10=erfact9*9/rref;
+erfact11=erfact10*10/rref; erfact12=erfact11*11/rref;
+erfact13=erfact12*12/rref; erfact14=erfact13*13/rref;
+erfact15=erfact14*14/rref;
+
+efcomp,
+dkn:={ b1ssr *erfact1 , yfact*b2ssr *erfact2 , b3ssr *erfact3 ,
+       yfact*b4ssr *erfact4 , b5ssr *erfact5 , yfact*b6ssr *erfact6 ,
+       b7ssr *erfact7 , yfact*b8ssr *erfact8 , b9ssr *erfact9 ,
+       yfact*b10ssr*erfact10, b11ssr*erfact11, yfact*b12ssr*erfact12,
+       b13ssr*erfact13, yfact*b14ssr*erfact14, b15ssr*erfact15 },
+dks:={ yfact*a1ssr *erfact1 , a2ssr *erfact2 , yfact*a3ssr *erfact3 ,
+       a4ssr *erfact4 , yfact*a5ssr *erfact5 , a6ssr *erfact6 ,
+       yfact*a7ssr *erfact7 , a8ssr *erfact8 , yfact*a9ssr *erfact9 ,
+       a10ssr*erfact10, yfact*a11ssr*erfact11, a12ssr*erfact12,
+       yfact*a13ssr*erfact13, a14ssr*erfact14, yfact*a15ssr*erfact15 };
+};
+
+iap=0;
+
+Neg_Rr_MCBXAB=-Rr_MCBXAB;
+
+!MCBXFAH
+klRef_MCBXFAH = BRef_MCBXFAH*l.MCBXFA*CLIGHT/(1E9*NRJ);
+exec new_magnetfamily(MCBXFAH);			! systematic error
+inv_MCBX=1;
+select,flag=error,clear;select,flag=error,pattern="^MCBXFAH\.3L1..err$";
+exec new_magnetindividual(MCBXFAH,iap);exec errorgenerate_abs(Rr_MCBXAB, klRef_MCBXFAH, 0, inv_MCBX);
+inv_MCBX=0;
+select,flag=error,clear;select,flag=error,pattern="^MCBXFAH\.3R1..err$";
+exec new_magnetindividual(MCBXFAH,iap);exec errorgenerate_abs(Rr_MCBXAB, klRef_MCBXFAH, 0, inv_MCBX);
+inv_MCBX=1;
+select,flag=error,clear;select,flag=error,pattern="^MCBXFAH\.3L5..err$";
+exec new_magnetindividual(MCBXFAH,iap);exec errorgenerate_abs(Rr_MCBXAB, klRef_MCBXFAH, 0, inv_MCBX);
+inv_MCBX=0;
+select,flag=error,clear;select,flag=error,pattern="^MCBXFAH\.3R5..err$";
+exec new_magnetindividual(MCBXFAH,iap);exec errorgenerate_abs(Rr_MCBXAB, klRef_MCBXFAH, 0, inv_MCBX);
+
+!MCBXFAV
+klRef_MCBXFAV = BRef_MCBXFAV*l.MCBXFA*CLIGHT/(1E9*NRJ);
+exec new_magnetfamily(MCBXFAV);			! systematic error
+inv_MCBX=1;
+select,flag=error,clear;select,flag=error,pattern="^MCBXFAV\.3L1..err$";
+exec new_magnetindividual(MCBXFAV,iap);exec errorgenerate_abs(Neg_Rr_MCBXAB, klRef_MCBXFAV, 0, inv_MCBX);
+inv_MCBX=0;
+select,flag=error,clear;select,flag=error,pattern="^MCBXFAV\.3R1..err$";
+exec new_magnetindividual(MCBXFAV,iap);exec errorgenerate_abs(Neg_Rr_MCBXAB, klRef_MCBXFAV, 0, inv_MCBX);
+inv_MCBX=1;
+select,flag=error,clear;select,flag=error,pattern="^MCBXFAV\.3L5..err$";
+exec new_magnetindividual(MCBXFAV,iap);exec errorgenerate_abs(Neg_Rr_MCBXAB, klRef_MCBXFAV, 0, inv_MCBX);
+inv_MCBX=0;
+select,flag=error,clear;select,flag=error,pattern="^MCBXFAV\.3R5..err$";
+exec new_magnetindividual(MCBXFAV,iap);exec errorgenerate_abs(Neg_Rr_MCBXAB, klRef_MCBXFAV, 0, inv_MCBX);
+
+
+!MCBXFBH
+klRef_MCBXFBH = BRef_MCBXFBH*l.MCBXFB*CLIGHT/(1E9*NRJ);
+exec new_magnetfamily(MCBXFBH);			! systematic error
+inv_MCBX=1;
+select,flag=error,clear;select,flag=error,pattern="^MCBXFBH\.a2L1..err$";
+exec new_magnetindividual(MCBXFBH,iap);exec errorgenerate_abs(Rr_MCBXAB, klRef_MCBXFBH, 0, inv_MCBX);
+inv_MCBX=0;
+select,flag=error,clear;select,flag=error,pattern="^MCBXFBH\.a2R1..err$";
+exec new_magnetindividual(MCBXFBH,iap);exec errorgenerate_abs(Rr_MCBXAB, klRef_MCBXFBH, 0, inv_MCBX);
+inv_MCBX=1;
+select,flag=error,clear;select,flag=error,pattern="^MCBXFBH\.a2L5..err$";
+exec new_magnetindividual(MCBXFBH,iap);exec errorgenerate_abs(Rr_MCBXAB, klRef_MCBXFBH, 0, inv_MCBX);
+inv_MCBX=0;
+select,flag=error,clear;select,flag=error,pattern="^MCBXFBH\.a2R5..err$";
+exec new_magnetindividual(MCBXFBH,iap);exec errorgenerate_abs(Rr_MCBXAB, klRef_MCBXFBH, 0, inv_MCBX);
+inv_MCBX=0;
+select,flag=error,clear;select,flag=error,pattern="^MCBXFBH\.b2L1..err$";
+exec new_magnetindividual(MCBXFBH,iap);exec errorgenerate_abs(Rr_MCBXAB, klRef_MCBXFBH, 0, inv_MCBX);
+inv_MCBX=1;
+select,flag=error,clear;select,flag=error,pattern="^MCBXFBH\.b2R1..err$";
+exec new_magnetindividual(MCBXFBH,iap);exec errorgenerate_abs(Rr_MCBXAB, klRef_MCBXFBH, 0, inv_MCBX);
+inv_MCBX=0;
+select,flag=error,clear;select,flag=error,pattern="^MCBXFBH\.b2L5..err$";
+exec new_magnetindividual(MCBXFBH,iap);exec errorgenerate_abs(Rr_MCBXAB, klRef_MCBXFBH, 0, inv_MCBX);
+inv_MCBX=1;
+select,flag=error,clear;select,flag=error,pattern="^MCBXFBH\.b2R5..err$";
+exec new_magnetindividual(MCBXFBH,iap);exec errorgenerate_abs(Rr_MCBXAB, klRef_MCBXFBH, 0, inv_MCBX);
+
+!MCBXFBV
+klRef_MCBXFBV = BRef_MCBXFBV*l.MCBXFB*CLIGHT/(1E9*NRJ);
+exec new_magnetfamily(MCBXFBV);			! systematic error
+inv_MCBX=1;
+select,flag=error,clear;select,flag=error,pattern="^MCBXFBV\.a2L1..err$";
+exec new_magnetindividual(MCBXFBV,iap);exec errorgenerate_abs(Neg_Rr_MCBXAB, klRef_MCBXFBV, 0, inv_MCBX);
+inv_MCBX=0;
+select,flag=error,clear;select,flag=error,pattern="^MCBXFBV\.a2R1..err$";
+exec new_magnetindividual(MCBXFBV,iap);exec errorgenerate_abs(Neg_Rr_MCBXAB, klRef_MCBXFBV, 0, inv_MCBX);
+inv_MCBX=1;
+select,flag=error,clear;select,flag=error,pattern="^MCBXFBV\.a2L5..err$";
+exec new_magnetindividual(MCBXFBV,iap);exec errorgenerate_abs(Neg_Rr_MCBXAB, klRef_MCBXFBV, 0, inv_MCBX);
+inv_MCBX=0;
+select,flag=error,clear;select,flag=error,pattern="^MCBXFBV\.a2R5..err$";
+exec new_magnetindividual(MCBXFBV,iap);exec errorgenerate_abs(Neg_Rr_MCBXAB, klRef_MCBXFBV, 0, inv_MCBX);
+inv_MCBX=0;
+select,flag=error,clear;select,flag=error,pattern="^MCBXFBV\.b2L1..err$";
+exec new_magnetindividual(MCBXFBV,iap);exec errorgenerate_abs(Neg_Rr_MCBXAB, klRef_MCBXFBV, 0, inv_MCBX);
+inv_MCBX=1;
+select,flag=error,clear;select,flag=error,pattern="^MCBXFBV\.b2R1..err$";
+exec new_magnetindividual(MCBXFBV,iap);exec errorgenerate_abs(Neg_Rr_MCBXAB, klRef_MCBXFBV, 0, inv_MCBX);
+inv_MCBX=0;
+select,flag=error,clear;select,flag=error,pattern="^MCBXFBV\.b2L5..err$";
+exec new_magnetindividual(MCBXFBV,iap);exec errorgenerate_abs(Neg_Rr_MCBXAB, klRef_MCBXFBV, 0, inv_MCBX);
+inv_MCBX=1;
+select,flag=error,clear;select,flag=error,pattern="^MCBXFBV\.b2R5..err$";
+exec new_magnetindividual(MCBXFBV,iap);exec errorgenerate_abs(Neg_Rr_MCBXAB, klRef_MCBXFBV, 0, inv_MCBX);
+
+
+
+return;
