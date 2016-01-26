@@ -87,7 +87,7 @@ Endmatch;
 
 };
 
-if(mylhcbeam==2)
+if(mylhcbeam>1)
 {
 
 !!IR1

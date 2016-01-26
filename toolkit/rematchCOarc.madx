@@ -51,7 +51,7 @@ lmdif, calls = 100, tolerance=1.E-30;
 Endmatch;
 };
 
-if(mylhcbeam==2)
+if(mylhcbeam>1)
 {
 !!IR1-left
 match,sequence=lhcb2,range=e.ds.r8.b2/e.ds.l1.b2,betx=100,bety=100,x=0,px=0,y=0,py=0;
