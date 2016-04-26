@@ -217,28 +217,29 @@ if (NRJ>4999.99){ exec,new_magnetindividual_mult(typm,col);};
 };
 
 errorgenerate_dip(typm) : macro ={
-is_inv=0;order=1;
+is_inv=0;order=0;
 exec, errorgenerate_rel(typm,$is_inv,$order);
 };
 
 errorgenerate_dip_inv(typm) : macro ={
-is_inv=1;order=1;
+is_inv=1;order=0;
 exec, errorgenerate_rel(typm,$is_inv,$order);
 };
 
 errorgenerate_quad(typm) : macro ={
-is_inv=0;order=2;
+is_inv=0;order=1;
 exec, errorgenerate_rel(typm,$is_inv,$order);
 };
 
 errorgenerate_quad_inv(typm) : macro ={
-is_inv=1;order=2;
+is_inv=1;order=1;
 exec, errorgenerate_rel(typm,$is_inv,$order);
 };
 
 errorgenerate_rel(typm,is_inv,ooo) : macro ={
+!ooo order of the reference multipole using madx convention B/A1 -> 0, B2/A2 ->1
 
-Refradius=Rr_typm;value,Refradius;
+Rref=Rr_typm;value,Rref;
 
 if (mylhcbeam==4) {is_beam4=1;} else {is_beam4=0;};
 if (rref/(abs(rref))==-1) {is_skew=1;} else {is_skew=0;};
@@ -247,20 +248,18 @@ yfact=(-1)^(magnetic_sign+is_beam4+is_inv); ! number of x-sign flips
 aaa=1;bbb=1;
 if (yfact==-1){ ! odd x-sign flips
    aaa=-aaa;bbb=bbb; ! a1,b2,... change signs
-   sign=(-1)^(1+is_skew+ooo); ! -1 if A1, B2 are main fields
+   sign=(-1)^(is_skew+ooo); ! -1 if A1, B2 are main fields
    aaa=sign*aaa;bbb=sign*bbb; ! change all signs in case A1, B2 are main fields
 };
 
 
-Efcomp,  radius = Refradius, order= ooo,
-dknr={bbb*b1ssr ,aaa*b2ssr ,bbb*b3ssr ,aaa*b4ssr ,bbb*b5ssr,
+Efcomp, radius = Rref, order= ooo,
+dknr:={bbb*b1ssr ,aaa*b2ssr ,bbb*b3ssr ,aaa*b4ssr ,bbb*b5ssr,
       aaa*b6ssr, bbb*b7ssr ,aaa*b8ssr ,bbb*b9ssr ,aaa*b10ssr,
       bbb*b11ssr,aaa*b12ssr,bbb*b13ssr,aaa*b14ssr,bbb*b15ssr},
-dksr={aaa*b1ssr ,bbb*b2ssr ,aaa*b3ssr ,bbb*b4ssr ,aaa*b5ssr,
-      bbb*b6ssr, aaa*b7ssr ,bbb*b8ssr ,aaa*b9ssr ,bbb*b10ssr,
-      aaa*b11ssr,bbb*b12ssr,aaa*b13ssr,bbb*b14ssr,aaa*b15ssr},
-};
-
+dksr:={aaa*a1ssr ,bbb*a2ssr ,aaa*a3ssr ,bbb*a4ssr ,aaa*a5ssr,
+      bbb*a6ssr, aaa*a7ssr ,bbb*a8ssr ,aaa*a9ssr ,bbb*a10ssr,
+      aaa*a11ssr,bbb*a12ssr,aaa*a13ssr,bbb*a14ssr,aaa*a15ssr};
 };
 
 errorgenerate_abs(typm,is_inv,ooo,klref): macro={
@@ -285,7 +284,7 @@ if (yfact==-1){ ! odd x-sign flips
 };
 rref=abs(rref);
 
-erfact1=klref*(rref)^(order);
+erfact1=klref*(rref)^(ooo);
 erfact2=erfact1*1/rref;
 erfact3=erfact2*2/rref; erfact4=erfact3*3/rref;
 erfact5=erfact4*4/rref; erfact6=erfact5*5/rref;
