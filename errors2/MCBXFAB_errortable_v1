@@ -9,19 +9,44 @@
 
 
 ! Units : relative field error for Rr = 50 mm in units of 10^-4
-Rref_MCBXFAH= 0.050;
-Rref_MCBXFBH= 0.050;
-Rref_MCBXFAV=-0.050;!skew reference
-Rref_MCBXFBV=-0.050;!skew reference
-magnetic_sign=0;
+Rr_MCBXFAH= 0.050;
+Rr_MCBXFBH= 0.050;
+Rr_MCBXFAV=-0.050;!skew reference
+Rr_MCBXFBV=-0.050;!skew reference
+!magnetic_sign=0;
 
+sign_MCBXFAH.3L1 = 1;
+sign_MCBXFAH.3R1 = 1;
+sign_MCBXFAH.3L5 = 1;
+sign_MCBXFAH.3R5 = 1;
+sign_MCBXFAV.3L1 = 1;
+sign_MCBXFAV.3R1 = 1;
+sign_MCBXFAV.3L5 = 1;
+sign_MCBXFAV.3R5 = 1;
 
+sign_MCBXFBH.a2L1 = 1;
+sign_MCBXFBH.a2R1 = 1;
+sign_MCBXFBH.a2L5 = 1;
+sign_MCBXFBH.a2R5 = 1;
+sign_MCBXFBV.a2L1 = 1;
+sign_MCBXFBV.a2R1 = 1;
+sign_MCBXFBV.a2L5 = 1;
+sign_MCBXFBV.a2R5 = 1;
+
+sign_MCBXFBH.b2L1 = 1;
+sign_MCBXFBH.b2R1 = 1;
+sign_MCBXFBH.b2L5 = 1;
+sign_MCBXFBH.b2R5 = 1;
+sign_MCBXFBV.b2L1 = 1;
+sign_MCBXFBV.b2R1 = 1;
+sign_MCBXFBV.b2L5 = 1;
+sign_MCBXFBV.b2R5 = 1;
 
 ! -----------------------------------------------------------------------
 ! *********************** Magnet type : MCBXFA (in CP) ****************** 
 ! -----------------------------------------------------------------------
-BRef_MCBXFAH := 4.5;                    ! B1
-BRef_MCBXFAV := 4.54;                   ! A1
+BRef_MCBXFAH := 4.5/l.MCBXFA;                    ! B1
+BRef_MCBXFAV := 4.54/l.MCBXFA;                   ! A1
 
 ! ----------------------------- INJECTION -------------------------------
 !                               bn                                                                                                                              ! No an components in horizontal part
@@ -101,8 +126,8 @@ a15M_MCBXFAV_col :=  0.0000 ; a15U_MCBXFAV_col :=  0. ; a15R_MCBXFAV_col :=  0. 
 ! -----------------------------------------------------------------------
 ! *********************** Magnet type : MCBXFB (around new Q2) ****************** 
 ! -----------------------------------------------------------------------
-BRef_MCBXFBH := 2.49;           ! B1
-BRef_MCBXFBV := 2.52;           ! A1
+BRef_MCBXFBH = 2.49/l.MCBXFB;           ! B1
+BRef_MCBXFBV = 2.52/l.MCBXFB;           ! A1
 
 ! ----------------------------- INJECTION -------------------------------
 !                                bn                                                                                                                             ! No an components in horizontal part

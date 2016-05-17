@@ -1,6 +1,8 @@
 ! Fine tuning of coupling correction
 ! S.Fartoukh March 2009
 ! 2011/11/21 From SLHCV3.0 R. De Maria
+! 2016/04/27 R. De Maria & F.F Van der Veken
+!            work around mad-x bug on integer part of the tune in presence of coupling for ctap calculation
 
 if(mylhcbeam==1)
 {kqtf=kqtf.b1;kqtf0=kqtf.b1;
@@ -15,97 +17,103 @@ if(mylhcbeam > 1)
  kqtd.b2:=kqtd;};
  
 
-! closest tune
- qmid=(qx0-qx00+qy0-qy00)*0.5;
+    ! closest tune
+    qmid=(qx0-qx00+qy0-qy00)*0.5;
 
- match;
- global, q1=qx00+qmid,q2=qy00+qmid;
- vary,   name=kqtf, step=1.E-9;
- vary,   name=kqtd, step=1.E-9;
- lmdif,  calls=50, tolerance=1.E-10;
- endmatch;
- 
- 
+    match;
+    global, q1=qx00+qmid,q2=qy00+qmid;
+    vary,   name=kqtf, step=1.E-9;
+    vary,   name=kqtd, step=1.E-9;
+    lmdif,  calls=50, tolerance=1.E-10;
+    endmatch;
+     
+     
 
-! Quick minimization based on linear machine
- cmrskew0 = cmrskew;
- cmiskew0 = cmiskew;
- twiss; qx=table(summ,q1); qy=table(summ,q2);
- cta0     = abs(qx-qy-tsplit);
- closest0 = cta0;
- 
- cmrskew  = cmrskew0+cta0/2.;
- twiss; qx=table(summ,q1); qy=table(summ,q2);
- ctap     = abs(qx-qy-tsplit);
- 
- cmrskew  = cmrskew0-cta0/2.;
- twiss; qx=table(summ,q1); qy=table(summ,q2);
- ctam     = abs(qx-qy-tsplit);
- 
- cmrskew  = cmrskew0+(ctam^2-ctap^2)/2./cta0;
- twiss; qx=table(summ,q1); qy=table(summ,q2);
- cta0     = abs(qx-qy-tsplit);
- 
- cmiskew  = cmiskew0+cta0/2.;
- twiss; qx=table(summ,q1); qy=table(summ,q2);
- ctap     = abs(qx-qy-tsplit);
- 
- cmiskew  = cmiskew0-cta0/2.;
- twiss; qx=table(summ,q1); qy=table(summ,q2);
- ctam     = abs(qx-qy-tsplit);
- 
- cmiskew  = cmiskew0+(ctam^2-ctap^2)/2./cta0;
- twiss; qx=table(summ,q1); qy=table(summ,q2);
+    ! Quick minimization based on linear machine
+    cmrskew0 = cmrskew;
+    cmiskew0 = cmiskew;
+    twiss; qx=table(summ,q1); qy=table(summ,q2);
+    cta0     = abs(2*(qx-qy)-round(2*(qx-qy)))/2;
+    closest0 = cta0;
+    !value,closest0;
 
- closest1 =abs(qx-qy-tsplit);
+    cmrskew  = cmrskew0+cta0/2.;
+    twiss; qx=table(summ,q1); qy=table(summ,q2);
+    ctap     = abs(2*(qx-qy)-round(2*(qx-qy)))/2;
+    !value,ctap;
 
+    cmrskew  = cmrskew0-cta0/2.;
+    twiss; qx=table(summ,q1); qy=table(summ,q2);
+    ctam     = abs(2*(qx-qy)-round(2*(qx-qy)))/2;
+    !value,ctam;
 
-!Empirical minimisation
- match;
- global, q1=qx00+qmid, q2=qy00+qmid;
- vary,   name=kqtf, step=1.E-9;
- vary,   name=kqtd, step=1.E-9;
- lmdif,  calls=100,tolerance=1.E-6;
- endmatch;
+    cmrskew  = cmrskew0+(ctam^2-ctap^2)/2./cta0;
+    twiss; qx=table(summ,q1); qy=table(summ,q2);
+    cta0     = abs(2*(qx-qy)-round(2*(qx-qy)))/2;
+    !value,cta0;
 
- match;
- global, q1=qx00+qmid, q2=qy00+qmid;
- vary,   name=cmrskew, step=1.E-9;
- vary,   name=cmiskew, step=1.E-9;
- lmdif,  calls=150, tolerance=2.E-6;
- endmatch;
+    cmiskew  = cmiskew0+cta0/2.;
+    twiss; qx=table(summ,q1); qy=table(summ,q2);
+    ctap     = abs(2*(qx-qy)-round(2*(qx-qy)))/2;
+    !value,ctap;
 
- match;
- global, q1=qx00+qmid, q2=qy00+qmid;
- vary,   name=kqtf, step=1.E-9;
- vary,   name=kqtd, step=1.E-9;
- lmdif,  calls=100, tolerance=1.E-7;
- endmatch;
+    cmiskew  = cmiskew0-cta0/2.;
+    twiss; qx=table(summ,q1); qy=table(summ,q2);
+    ctam     = abs(2*(qx-qy)-round(2*(qx-qy)))/2;
+    !value,ctam;
 
- match;
- global, q1=qx00+qmid, q2=qy00+qmid;
- vary,   name=cmrskew, step=1.E-9;
- vary,   name=cmiskew, step=1.E-9;
- lmdif,  calls=150, tolerance=2.E-7;
- endmatch;
+    cmiskew  = cmiskew0+(ctam^2-ctap^2)/2./cta0;
+    twiss; qx=table(summ,q1); qy=table(summ,q2);
 
- match;
- global, q1=qx00+qmid, q2=qy00+qmid;
- vary,   name=kqtf, step=1.E-9;
- vary,   name=kqtd, step=1.E-9;
- lmdif,  calls=100, tolerance=1.E-7;
- endmatch;
+    closest1 =abs(2*(qx-qy)-round(2*(qx-qy)))/2;
+    !value,closest1;
 
- twiss;  qx=table(summ,q1); qy=table(summ,q2);
- closest2=abs(qx-qy-tsplit);
- value, closest0, closest1, closest2, cmrskew, cmiskew;
- 
- if(mylhcbeam==1)
+    !Empirical minimisation
+    match;
+    global, q1=qx00+qmid, q2=qy00+qmid;
+    vary,   name=kqtf, step=1.E-9;
+    vary,   name=kqtd, step=1.E-9;
+    lmdif,  calls=100,tolerance=1.E-6;
+    endmatch;
+
+    match;
+    global, q1=qx00+qmid, q2=qy00+qmid;
+    vary,   name=cmrskew, step=1.E-9;
+    vary,   name=cmiskew, step=1.E-9;
+    lmdif,  calls=150, tolerance=2.E-6;
+    endmatch;
+
+    match;
+    global, q1=qx00+qmid, q2=qy00+qmid;
+    vary,   name=kqtf, step=1.E-9;
+    vary,   name=kqtd, step=1.E-9;
+    lmdif,  calls=100, tolerance=1.E-7;
+    endmatch;
+
+    match;
+    global, q1=qx00+qmid, q2=qy00+qmid;
+    vary,   name=cmrskew, step=1.E-9;
+    vary,   name=cmiskew, step=1.E-9;
+    lmdif,  calls=150, tolerance=2.E-7;
+    endmatch;
+
+    match;
+    global, q1=qx00+qmid, q2=qy00+qmid;
+    vary,   name=kqtf, step=1.E-9;
+    vary,   name=kqtd, step=1.E-9;
+    lmdif,  calls=100, tolerance=1.E-7;
+    endmatch;
+
+twiss;  qx=table(summ,q1); qy=table(summ,q2);
+closest2=abs(2*(qx-qy)-round(2*(qx-qy)))/2;
+value, closest0, closest1, closest2, cmrskew, cmiskew;
+
+if(mylhcbeam==1)
 {kqtf.b1=kqtf0;
- kqtd.b1=kqtd0;};
+kqtd.b1=kqtd0;};
 
- if(mylhcbeam > 1)
+if(mylhcbeam > 1)
 {kqtf.b2=kqtf0;
- kqtd.b2=kqtd0;};
+ kqtd.b2=kqtd0;};	
 
 return;

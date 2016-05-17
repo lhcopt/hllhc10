@@ -279,7 +279,7 @@ yfact=(-1)^(magnetic_sign+is_beam4+is_inv); ! number of x-sign flips
 aaa=1;bbb=1;
 if (yfact==-1){ ! odd x-sign flips
    aaa=-aaa;bbb=bbb; ! a1,b2,... change signs
-   sign=(-1)^(1+is_skew+ooo); ! -1 if A1, B2 are main fields
+   sign=(-1)^(is_skew+ooo); ! -1 if A1, B2 are main fields
    aaa=sign*aaa;bbb=sign*bbb; ! change all signs in case A1, B2 are main fields
 };
 rref=abs(rref);
