@@ -272,17 +272,32 @@ errorgenerate_abs(typm,is_inv,ooo,klref): macro={
 
 rref=Rr_typm;value,rref;
 
+    ! There are 3 effects that cause a sign flip: beam4, an inverted magnet
+    ! (connection side opposite to beam direction), and the magnetic convention.
+    ! These three are combined in yfact
 if (mylhcbeam==4) {is_beam4=1;} else {is_beam4=0;};
-if (rref/(abs(rref))==-1) {is_skew=1;} else {is_skew=0;};
-yfact=(-1)^(magnetic_sign+is_beam4+is_inv); ! number of x-sign flips
+yfact=(-1)^(magnetic_sign+is_beam4+is_inv);           ! number of x-sign flips
+    ! If we have an odd number of sign flips (yfact=-1),
+    ! then we change the appropriate multipoles (odd an, even bn) 
+aaa=yfact;
+bbb=1;
 
-aaa=1;bbb=1;
-if (yfact==-1){ ! odd x-sign flips
-   aaa=-aaa;bbb=bbb; ! a1,b2,... change signs
-   sign=(-1)^(is_skew+ooo); ! -1 if A1, B2 are main fields
-   aaa=sign*aaa;bbb=sign*bbb; ! change all signs in case A1, B2 are main fields
-};
+    ! In case of a sign flip, the main field changes sign as well if skew
+    ! and even order (order from KL) or if regular and odd order. Eg. A1, B2, ...
+    ! Instead of changing the main field sign, we change all multipoles.
+    ! However, in case of Beam 4, we shouldn't change signs as this is then
+    ! already done in optics (due to the bv_aux flag), unless we define the
+    ! main field separately in which case we have to multiply it with bv_aux
+    ! in its error routine (eg MCBXF).
+    ! Skew main fields are recognised by a negative reference radius.
+if (rref/(abs(rref))==-1) {is_skew=1;} else {is_skew=0;};     ! Skew main field
 rref=abs(rref);
+yfactref=(-1)^(magnetic_sign+is_inv);
+if (yfactref==-1){ ! odd x-sign flips
+   sign=(-1)^(is_skew+ooo);  ! -1 if A1, B2 are main fields
+   aaa=sign*aaa;             ! change all signs in case A1, B2 are main fields
+   bbb=sign*bbb;
+};
 
 erfact1=klref*(rref)^(ooo);
 erfact2=erfact1*1/rref;
