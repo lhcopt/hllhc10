@@ -45,8 +45,8 @@ sign_MCBXFBV.b2R5 = 1;
 ! -----------------------------------------------------------------------
 ! *********************** Magnet type : MCBXFA (in CP) ****************** 
 ! -----------------------------------------------------------------------
-BRef_MCBXFAH := 4.5/l.MCBXFA;                    ! B1
-BRef_MCBXFAV := 4.54/l.MCBXFA;                   ! A1
+BRef_MCBXFAH = 4.5/l.MCBXFA;                    ! B1
+BRef_MCBXFAV = 4.54/l.MCBXFA;                   ! A1
 
 ! ----------------------------- INJECTION -------------------------------
 !                               bn                                                                                                                              ! No an components in horizontal part
