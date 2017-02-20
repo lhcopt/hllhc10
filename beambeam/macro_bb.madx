@@ -1,6 +1,9 @@
 ! S. Fartoukh 2011/11/16 from SLHCV3.0/beambeam
 ! S. Fartoukh  June 2012 modification to install an arbirtrary number of ho
 ! slices and crab the strong beam
+! D. Pellegrini Macro for levelling with parallel separation, July 2016
+! S. Fartoukh feature corrected for twisscrab table creation (checking that all IP knob are off), July 2016
+! D. Pellegrini: reverted to full path for the foot command, 15 July 2016
 
 DEFINE_BB_PARAM : macro =
 {
@@ -237,8 +240,17 @@ readmytable,file="temp/twiss.tfs",table=twissb2;
 !! Calculate twiss table with crab
  on0_x1=on_x1; on0_sep1=on_sep1; on0_x2=on_x2; on0_sep2=on_sep2; on0_alice=on_alice;
  on0_x5=on_x5; on0_sep5=on_sep5; on0_x8=on_x8; on0_sep8=on_sep8; on0_lhcb =on_lhcb;
+ on0_a1=on_a1; on0_o1=on_o1;on0_oe1=on_oe1;on0_a5=on_a5;on0_o5=on_o5;on0_oe5=on_oe5;
+ on0_a2=on_a2; on0_o2=on_o2;on0_oe2=on_oe2;on0_a8=on_a8;on0_o8=on_o8;on0_oe8=on_oe8;
  on_x1:=0; on_sep1:=0; on_x2:=0; on_sep2:=0; on_alice:=0;
  on_x5:=0; on_sep5:=0; on_x8:=0; on_sep8:=0; on_lhcb :=0;
+ on_a1=0;on0_o1=0;on_oe1=0;on_a5=0;on_o5=0;on_oe5=0;
+ on_a2=0;on0_o2=0;on_oe2=0;on_a8=0;on_o8=0;on_oe8=0;
+ 
+ use,sequence=lhcb1;twiss;corbitmax1=table(summ,xcomax)^2+table(summ,ycomax)^2;
+ if(corbitmax1>1.d-15) {print,text="crossing bump not off for b1 when caclulating CC effect in bbmacro"; stop;};
+ use,sequence=lhcb2;twiss;corbitmax2=table(summ,xcomax)^2+table(summ,ycomax)^2;
+ if(corbitmax2>1.d-15) {print,text="crossing bump not off for b2 when caclulating CC effect in bbmacro"; stop;};
  
  on_crab1:=fraction_crab*on0_x1;on_crab5:=fraction_crab*on0_x5;z_crab=0.075;
  select,flag=twiss,clear;
@@ -250,6 +262,9 @@ readmytable,file="temp/twiss.tfs",table=twissb2;
  
  on_x1=on0_x1; on_sep1=on0_sep1;on_x2=on0_x2; on_sep2=on0_sep2; on_alice=on0_alice;
  on_x5=on0_x5; on_sep5=on0_sep5;on_x8=on0_x8; on_sep8=on0_sep8; on_lhcb =on0_lhcb;
+ on_a1=on0_a1; on_o1=on0_o1;on_oe1=on0_oe1;on_a5=on0_a5;on_o5=on0_o5;on_oe5=on0_oe5;
+ on_a2=on0_a2; on_o2=on0_o2;on_oe2=on0_oe2;on_a8=on0_a8;on_o8=on0_o8;on_oe8=on0_oe8;
+
  on_crab1:=0;on_crab5:=0;z_crab=0;
 
 !! Define head on BB lens for beam1/2
@@ -574,7 +589,7 @@ write,table=BBtable_BIM,file=temp/BBtable_BIM.tfs;
 MAKEFOOTPRINT(BIM) : macro = {
 
 seqedit,sequence=lhcBIM;
-cycle,start=IP2;
+cycle,start=IP3;
 flatten;
 endedit;
 
@@ -611,8 +626,8 @@ system, "rm -rf temp/dynaptune";
 system, "rm -rf temp/footprint";
 write,table=dynap,file="temp/dynap";
 write,table=dynaptune,file="temp/dynaptune";
-!system,"/afs/cern.ch/group/si/slap/bin/foot < temp/dynaptune > temp/footprint";
-system,"foot < temp/dynaptune > temp/footprint";
+system,"/afs/cern.ch/group/si/slap/bin/foot < temp/dynaptune > temp/footprint";
+!system,"foot < temp/dynaptune > temp/footprint";
 
 !/*
 seqedit,sequence=lhcBIM;
@@ -634,3 +649,63 @@ plot,style=100,noversion=true,nolegend=true,title=Footprint-BIM,table=foottable,
 
 
 };
+
+LEVEL_OFFSET_COMMON(TARGET_LUMI,nIP): macro = {
+  !!! The number of bunch interactions should be available in the mask as:
+  ! nco_IP1= 2064;
+  ! nco_IP5= nco_IP1;
+  ! nco_IP2= 1692;
+  ! nco_IP8= 1765;
+
+  use sequence=lhcb1;
+  twiss;
+
+  offlvl_sx= sqrt(beam%lhcb1->ex * table(TWISS,IPnIP,betx));
+  offlvl_sy= sqrt(beam%lhcb1->ey * table(TWISS,IPnIP,bety));
+  offlvl_sigz= beam%lhcb1->sigt;
+  offlvl_int = beam%lhcb1->npart;
+
+  offlvl_px = table(TWISS,IPnIP,px);
+  offlvl_py = table(TWISS,IPnIP,py);
+
+  if (abs(offlvl_px)>abs(offlvl_py)) {
+    ! Horizontal Crossing
+    offlvl_phi_2 = offlvl_px;
+    offlvl_sigX = offlvl_sx; !sigma in the crossing direction
+    offlvl_sigP = offlvl_sy; !sigma in the parallel direction
+  } else {
+    ! Vertical Crossing
+    offlvl_phi_2 = offlvl_py;
+    offlvl_sigX = offlvl_sy; !sigma in the crossing direction
+    offlvl_sigP = offlvl_sx; !sigma in the parallel direction
+  };
+
+  offlvl_sigEff = sqrt(offlvl_sigX^2 + (offlvl_phi_2*offlvl_sigz)^2);
+
+  offlvl_frev = CLIGHT/LHCLENGTH;
+  offlvl_nb = nco_IPnIP;
+
+  offlvl_L0=(offlvl_int^2*offlvl_frev*offlvl_nb)/(4*PI*offlvl_sigP*offlvl_sigEff)*1e-4;
+  offlvl_log=log(offlvl_L0/TARGET_LUMI);
+
+  if (offlvl_log>0) {
+    offlvl_log=sqrt(offlvl_log);
+  } else {
+    printf, text="LEVEL_OFFSET: the luminosity target is larger than the maximum luminosity: L0=%F Hz/cm2", value=offlvl_L0;
+    offlvl_log=0;
+  };
+};
+
+LEVEL_PARALLEL_OFFSET_FOR(TARGET_LUMI, nIP): macro = 
+{
+  exec LEVEL_OFFSET_COMMON(TARGET_LUMI,nIP);
+  halonIP = 2*offlvl_log;
+  printf, text="Set%g halo to %f sigma, the lumi is reduced from %F Hz/cm2 to %F Hz/cm2", value=nIP,halonIP,offlvl_L0,TARGET_LUMI;
+};
+
+LEVEL_TRANSVERSE_OFFSET_FOR(TARGET_LUMI, nIP): macro = {
+  exec LEVEL_OFFSET_COMMON(TARGET_LUMI,nIP);
+  halonIP = 2*offlvl_log * offlvl_sigEff/offlvl_sigX;
+  printf, text="Set%g halo to %f sigma, the lumi is reduced from %F Hz/cm2 to %F Hz/cm2", value=nIP,halonIP,offlvl_L0,TARGET_LUMI;
+};
+
