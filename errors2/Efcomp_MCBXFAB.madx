@@ -37,7 +37,7 @@ select,flag=error,clear;select,flag=error,pattern="^MCBXFAH\.3R5..err$";
 exec new_magnetindividual(MCBXFAH,iap);exec errorgenerate_abs(MCBXFAH, inv_MCBX, 0, klRef_MCBXFAH);
 
 !MCBXFAV
-klRef_MCBXFAV_abs = BRef_MCBXFAV*l.MCBXFA*CLIGHT/(1E9*NRJ);
+klRef_MCBXFAV_abs = BRef_MCBXFAV*l.MCBXFA*CLIGHT/(1E9*NRJ);       ! Main field gets a sign flip  -> removed *(-bvaux) again, gave wrong results
 exec new_magnetfamily(MCBXFAV);                 ! systematic error
 inv_MCBX=1;
 klRef_MCBXFAV = sign_MCBXFAV.3L1*klRef_MCBXFAV_abs;
@@ -82,7 +82,6 @@ select,flag=error,clear;select,flag=error,pattern="^MCBXFBH\.b2L1..err$";
 exec new_magnetindividual(MCBXFBH,iap);exec errorgenerate_abs(MCBXFBH, inv_MCBX, 0, klRef_MCBXFBH);
 inv_MCBX=1;
 klRef_MCBXFBH = sign_MCBXFBH.b2R1*klRef_MCBXFBH_abs;
-value, sign_MCBXFBH.b2R1,klRef_MCBXFBH_abs,klRef_MCBXFBH;
 select,flag=error,clear;select,flag=error,pattern="^MCBXFBH\.b2R1..err$";
 exec new_magnetindividual(MCBXFBH,iap);exec errorgenerate_abs(MCBXFBH, inv_MCBX, 0, klRef_MCBXFBH);
 inv_MCBX=0;
@@ -95,7 +94,7 @@ select,flag=error,clear;select,flag=error,pattern="^MCBXFBH\.b2R5..err$";
 exec new_magnetindividual(MCBXFBH,iap);exec errorgenerate_abs(MCBXFBH, inv_MCBX, 0, klRef_MCBXFBH);
 
 !MCBXFBV
-klRef_MCBXFBV_abs = BRef_MCBXFBV*l.MCBXFB*CLIGHT/(1E9*NRJ);
+klRef_MCBXFBV_abs = BRef_MCBXFBV*l.MCBXFB*CLIGHT/(1E9*NRJ);       ! Main field gets a sign flip   ->  removed *(-bvaux) again, gave wrong results
 exec new_magnetfamily(MCBXFBV);                 ! systematic error
 inv_MCBX=1;
 klRef_MCBXFBV = sign_MCBXFBV.a2L1*klRef_MCBXFBV_abs;
