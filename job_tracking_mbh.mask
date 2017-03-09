@@ -9,7 +9,7 @@ System,"mkdir temp";
 System,"ln -fns /afs/cern.ch/eng/lhc/optics/V6.503 db5";
 System,"ln -fns /afs/cern.ch/eng/lhc/optics/HLLHCV1.0 slhc";
 system,"ln -fns /afs/cern.ch/eng/lhc/optics/errors/0705 wise";
-
+system,"ln -fns /afs/cern.ch/eng/lhc/optics/V6.503/WISE/After_sector_3-4_repair fidel";
 option,-echo,-info;
 
 !---------------------------------------------------------------;
@@ -17,37 +17,66 @@ option,-echo,-info;
 !---------------------------------------------------------------;
 call,file="slhc/toolkit/macro.madx";        !Call some macro facilities
 
-!Call HLLHCV1.0 sequence
-!Option, -echo,-warn,-info;
-!call,file="slhc/hllhc_thin.seq";
-REAL CONST l.TAN   = 3.7  ;REAL CONST l.TANAL = l.TAN;
-REAL CONST l.TANAR = l.TAN;REAL CONST l.TANC  = l.TAN;
-REAL CONST l.TCT   = 1.0;REAL CONST l.TCTH  = l.TCT;REAL CONST l.TCTVA = l.TCT;
-call,file="db5/V6.5.seq";
+ mylhcbeam=1 ;! LHC beam 1 (clockwise)
+!mylhcbeam=2 ;! LHC beam 2 (clockwise)
+!mylhcbeam=4 ;! LHC beam 2 (counterclockwise)
+
+
+!!********************************************************************
+!!Manual Thin Sequence building
+!!********************************************************************
+Option, -echo,-warn,-info;
+if (mylhcbeam==4){
+   call,file="db5/beam_four.seq"; bvaux=1;}
+else {
+   call,file="db5/V6.5.seq"; bvaux=-1;};
+Option, -echo,warn,-info;
+!
+!!Install HL-LHC
 call,file="slhc/hllhc_sequence.madx";
-seqedit,sequence=lhcb1;flatten;cycle,start=IP3;endedit;
-seqedit,sequence=lhcb2;flatten;cycle,start=IP3;endedit;
-mbh_rm_mcs=1; mbh_rm_mcdo=1; !=1 to remove spools
-mbh_ir2q8=0;mbh_ir2q10=0;
-mbh_ir7q8=1;mbh_ir7q10=1;
-mbh_ir1q8=0;mbh_ir1q9=0;mbh_ir1q10=0;
-mbh_ir5q8=0;mbh_ir5q9=0;mbh_ir5q10=0;
+
+!!Install MBH
+!mbh_rm_mcs=0;
+mbh_rm_mcdo=1; !=1 to remove spools
+!mbh_ir2q8=0;mbh_ir2q10=0;
+mbh_ir7q8=1;mbh_ir7q10=0;
+!mbh_ir1q8=0;mbh_ir1q9=1;mbh_ir1q10=0;
+!mbh_ir5q8=0;mbh_ir5q9=1;mbh_ir5q10=0;
 call,file="slhc/toolkit/install_mbh.madx";
+
+! Slice nominal sequence
 exec,myslice;
 
-Option, -echo,-warn,-info;
+!********************************************************************
+!Saved Thin Sequence
+!missing variables like lhclength and so on
+!********************************************************************
+!Option, -echo,-warn,-info;
+!if (mylhcbeam==4){
+!   call,file="slhc/hllhc_thinb4.seq"; bvaux=1;}
+!else {
+!   call,file="slhc/hllhc_thin.seq"; bvaux=-1;};
+!Option, -echo,warn,-info;
 
 !Cycling w.r.t. to IP3 (mandatory to find closed orbit in collision in the presence of errors)
-seqedit,sequence=lhcb1;flatten;cycle,start=IP3;endedit;
-seqedit,sequence=lhcb2;flatten;cycle,start=IP3;endedit;
+seqedit,sequence=lhcb1;flatten;cycle,start=IP3;flatten;endedit;
+seqedit,sequence=lhcb2;flatten;cycle,start=IP3;flatten;endedit;
 
 !********************************************
 
- mylhcbeam:=1 ;// LHC beam 1 (clockwise)
-!mylhcbeam:=2 ;// LHC beam 2 (clockwise)
+ mylhcbeam=1 ;// LHC beam 1 (clockwise)
+!mylhcbeam=2 ;// LHC beam 2 (clockwise)
+!mylhcbeam=4 ;// LHC beam 2 (anti-clockwise)
 
 ! NRJ:= 450.0  ; // injection
 NRJ:= 7000.0 ; // collision
+
+! A Laundau octupole current 20A inj, -570A col
+if (NRJ<4999.9999){
+	I_MO=0;
+} else {
+	I_MO=0;
+};
 
 !General switch to select collision (0/1)
 ON_COLLISION:=0;
@@ -61,9 +90,9 @@ ON_BB_SWITCH:=0;
 
 sigt_col=0.075; ! bunch length [m] in collision
 
- gamma_rel      := NRJ/pmass;
- epsx:=emittance_norm /gamma_rel;
- epsy:=emittance_norm /gamma_rel;
+gamma_rel      := NRJ/pmass;
+epsx:=emittance_norm /gamma_rel;
+epsy:=emittance_norm /gamma_rel;
 
 !********************************************
 
@@ -72,62 +101,154 @@ qx00  = 62.0;  !integer h tune
 qy00  = 60.0;  !integer v tune
 
 
-if (NRJ<4999.9999)
-{
-!Inj. optics in thin lens
-call,file="slhc/opt_inj_thin.madx";  ! beta* [m]=6/10/6/10 in IR1/2/5/8
-qx0 = 62.28;   qy0 = 60.31;  qprime = 2.0;
-Beam,particle=proton,sequence=lhcb1,energy=NRJ,sigt=0.130,bv= 1,
-                     NPART=Nb_0,sige=4.5e-4,ex=epsx,ey=epsy;
-Beam,particle=proton,sequence=lhcb2,energy=NRJ,sigt=0.130,bv=-1,
-                     NPART=Nb_0,sige=4.5e-4,ex=epsx,ey=epsy;
+if (NRJ<4999.9999){
+	!Inj. optics in thin lens
+	call,file="slhc/opt_inj_thin.madx";  ! beta* [m]=6/10/6/10 in IR1/2/5/8
+	qx0 = 62.28;   qy0 = 60.31;  qprime = 3.0;
+	if (mylhcbeam<3){
+		Beam,particle=proton,sequence=lhcb1,energy=NRJ,sigt=0.130,bv=1,NPART=Nb_0,sige=4.5e-4,ex=epsx,ey=epsy;
+	};
+	Beam,particle=proton,sequence=lhcb2,energy=NRJ,sigt=0.130,bv=bvaux,NPART=Nb_0,sige=4.5e-4,ex=epsx,ey=epsy;
 };
 
-if (NRJ>5000.0000)
-{
-!Coll. optics in thin lens for IR1&5 (various possible beta*_x/y in IR1/5)
-call,file="slhc/opt_round_thin.madx";  ! beta*=15cm in IR1/5, beta*=10 m in IR2, 3m in IR8.
-!call,file="slhc/opt_flat_thin.madx";   ! beta*=7.5/30cm in IR1, beta*=30/7.5cm in IR5, beta*=10 m in IR2, 3m in IR8.
-!call,file="slhc/opt_sflat_thin.madx";  ! beta*=5.0/20cm in IR1, beta*=20/5.0cm in IR5, beta*=10 m in IR2, 3m in IR8.
-!call,file="slhc/opt_flathv_thin.madx"; ! beta*=30/7.5cm in IR1, beta*=7.5/30cm in IR5, beta*=10 m in IR2, 3m in IR8.
-!call,file="slhc/opt_sflathv_thin.madx";! beta*=20/5.0cm in IR1, beta*=5.0/20cm in IR5, beta*=10 m in IR2, 3m in IR8.
-qx0 = 62.31;   qy0 = 60.32;  qprime = 2.0;
-ON_QPP     :=0;  ! Correction of residual Q'' by MO's
-ON_DISP    :=1;  ! Correction of spurious dispersion
-Beam,particle=proton,sequence=lhcb1,energy=NRJ,sigt=sigt_col,bv= 1,
-                     NPART=Nb_0,sige=1.1e-4,ex=epsx,ey=epsy;
-Beam,particle=proton,sequence=lhcb2,energy=NRJ,sigt=sigt_col,bv=-1,
-                     NPART=Nb_0,sige=1.1e-4,ex=epsx,ey=epsy;
+if (NRJ>5000.0000){
+	!Coll. optics in thin lens for IR1&5 (various possible beta*_x/y in IR1/5)
+	call,file="slhc/opt_round_thin.madx";  ! beta*=15cm in IR1/5, beta*=10 m in IR2, 3m in IR8.
+	! call,file="slhc/opt_sround_thin.madx"; ! beta*=10cm in IR1/5, beta*=10 m in IR2, 3m in IR8.
+	!call,file="slhc/opt_flat_thin.madx";   ! beta*=7.5/30cm in IR1, beta*=30/7.5cm in IR5, beta*=10 m in IR2, 3m in IR8.
+	!call,file="slhc/opt_sflat_thin.madx";  ! beta*=5.0/20cm in IR1, beta*=20/5.0cm in IR5, beta*=10 m in IR2, 3m in IR8.
+	!call,file="slhc/opt_flathv_thin.madx"; ! beta*=30/7.5cm in IR1, beta*=7.5/30cm in IR5, beta*=10 m in IR2, 3m in IR8.
+	!call,file="slhc/opt_sflathv_thin.madx";! beta*=20/5.0cm in IR1, beta*=5.0/20cm in IR5, beta*=10 m in IR2, 3m in IR8.
+	!call,file="slhc/opt_180_180_180_180_thin.madx";
+	!call,file="slhc/opt_220_220_220_220_thin.madx";
+	!call,file="slhc/opt_260_260_260_260_thin.madx";
+	!call,file="slhc/opt_300_300_300_300_thin.madx";
+	!call,file="slhc/opt_340_340_340_340_thin.madx";
+	!call,file="slhc/opt_380_380_380_380_thin.madx";
+	!call,file="slhc/opt_420_420_420_420_thin.madx";
+	!call,file="slhc/opt_presqueeze_thin.madx";
+	!call,file="slhc/opt_presqueeze1000_thin.madx";
+	qx0 = 62.31;   qy0 = 60.32;  qprime = 3.0;
+	ON_QPP     :=0;  ! Correction of residual Q'' by MO's
+	ON_DISP    :=1;  ! Correction of spurious dispersion
+	if (mylhcbeam<3){
+		Beam,particle=proton,sequence=lhcb1,energy=NRJ,sigt=sigt_col,bv=1,NPART=Nb_0,sige=1.1e-4,ex=epsx,ey=epsy;
+	};
+	Beam,particle=proton,sequence=lhcb2,energy=NRJ,sigt=sigt_col,bv=bvaux,NPART=Nb_0,sige=1.1e-4,ex=epsx,ey=epsy;
 };
+
+
+!+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++;
+!   Rematch IP1 IP5 phase
+!+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++;
+! nominal round: mux_ip15 = 31.21038468 ; muy_ip15 = 30.37288037 ;
+! nominal injection: mux_ip15 = 31.19538482 ; muy_ip15 = 30.36788031 ;
+
+!mux_ip15 = 31.21038468;
+!muy_ip15 = 31.19538482;
+
+!call,file="slhc/toolkit/make_ip15phase.madx";
+!call,file=slhc/toolkit/make_ip15phase_tm.madx; ! use phase-trombone instead
+!call,file=slhc/toolkit/delete_ip15phase_tm.madx; ! remove phase trombone
+
+! test new optics
+if (mylhcbeam==1){
+	exec,check_ip(b1);
+} else {
+	exec,check_ip(b2);
+}
+mux_ip15_ref=table(twiss,IP1,mux)-table(twiss,IP5,mux);
+muy_ip15_ref=table(twiss,IP1,muy)-table(twiss,IP5,muy);
+value,mux_ip15_ref,muy_ip15_ref;
+
+!+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++;
+!Set crossing angle and separations knobs
+!+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++;
+phi_IR1 =   90.000; phi_IR5 =   0.000; ! For round and flat optics
+!phi_IR1 =    0.000; phi_IR5 =   90.000; ! For flathv optics
+xing15=295e-6; sep15=2e-3;
+xing8=-250e-6; sep8=-2e-3; on_lhcb=+1;
+xing2= 170e-6; sep2=2e-3; on_alice=1;
+
+on_x1=xing15/(pxIP1b1+pyIP1b1);
+on_sep1=sep15/(xIP1b1+yIP1b1);
+on_x5=xing15/(pxIP5b1+pyIP5b1);
+on_sep5=sep15/(xIP5b1+yIP5b1);
+on_x2=xing2/(pyIP2b1-69.9994e-6); !removing alice=1 from pyIP2b1
+on_sep2=sep2/xIP2b1;
+on_x8=xing8/(pxIP8b1+134.9879e-6); !!removing on_lhcb from pxIP8b1
+on_sep8=sep8/yIP8b1;
+
+value,on_x1,on_sep1,on_x5,on_sep5,on_x2,on_sep2,on_x8,on_sep8;
+
+on_disp=1;
+
 
 !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++;
 !                        TEST the optics
 !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++;
-/*
-on_x1:=0;on_x5:=0;on_sep1:=0;on_sep5:=0;
-on_x2:=0;on_x8:=0;on_sep2:=0;on_sep8:=0;on_lhcb:=0;on_alice:=0;
+!/*
+	! Saving crossing scheme knobs
+	on_x1aux=on_x1;on_sep1aux=on_sep1;
+	on_x2aux=on_x2;on_sep2aux=on_sep2;
+	on_x5aux=on_x5;on_sep5aux=on_sep5;
+	on_x8aux=on_x8;on_sep8aux=on_sep8; on_a8aux=on_a8;
+	on_aliceaux=on_alice; on_lhcbaux=on_lhcb;
+	on_dispaux=on_disp;
+
+	on_x1=0;on_x5=0;on_sep1=0;on_sep5=0;
+	on_x2=0;on_x8=0;on_sep2=0;on_sep8=0; on_a8=0;
+	on_lhcb=0;on_alice=0;
+	on_disp=0;
+	system,"rm -f twiss.b1";system,"rm -f twiss.b2";
+	if (mylhcbeam<3){
+		Use, sequence=lhcb1;
+		select,flag=twiss,clear;
+		select, flag=twiss, pattern="IP1",   column=name,s,betx,bety,alfx,alfy,dx,dpx,mux,muy;
+		select, flag=twiss, pattern="IP2",   column=name,s,betx,bety,alfx,alfy,dx,dpx,mux,muy;
+		select, flag=twiss, pattern="IP5",   column=name,s,betx,bety,alfx,alfy,dx,dpx,mux,muy;
+		select, flag=twiss, pattern="IP8",   column=name,s,betx,bety,alfx,alfy,dx,dpx,mux,muy;
+		twiss,sequence=lhcb1,file=twiss.b1;system,"cat twiss.b1";
+	};
+
+	Use, sequence=lhcb2;
+	select,flag=twiss,clear;
+	select, flag=twiss, pattern="IP1",   column=name,s,betx,bety,alfx,alfy,dx,dpx,mux,muy;
+	select, flag=twiss, pattern="IP2",   column=name,s,betx,bety,alfx,alfy,dx,dpx,mux,muy;
+	select, flag=twiss, pattern="IP5",   column=name,s,betx,bety,alfx,alfy,dx,dpx,mux,muy;
+	select, flag=twiss, pattern="IP8",   column=name,s,betx,bety,alfx,alfy,dx,dpx,mux,muy;
+	twiss, sequence=lhcb2,file=twiss.b2;system,"cat twiss.b2";
+
+	system,"rm -f twiss.b1";system,"rm -f twiss.b2";
+	!Switch on Xscheme
+	on_x1=on_x1aux;on_sep1=on_sep1aux;
+	on_x2=on_x2aux;on_sep2=on_sep2aux;
+	on_x5=on_x5aux;on_sep5=on_sep5aux;
+	on_x8=on_x8aux;on_sep8=on_sep8aux; on_a8=an_a8aux;
+	on_alice=on_aliceaux; on_lhcb=on_lhcbaux;
+	on_disp=on_dispaux;
+
+	if (mylhcbeam<3){
+		Use, sequence=lhcb1;
+		select,flag=twiss,clear;
+		select, flag=twiss, pattern="IP1",   column=name,s,x,y,px,py;
+		select, flag=twiss, pattern="IP2",   column=name,s,x,y,px,py;
+		select, flag=twiss, pattern="IP5",   column=name,s,x,y,px,py;
+		select, flag=twiss, pattern="IP8",   column=name,s,x,y,px,py;
+		twiss, sequence=lhcb1, file=twiss.b1;system,"cat twiss.b1";
+	};
+
+	Use, sequence=lhcb2;
+	select,flag=twiss,clear;
+	select, flag=twiss, pattern="IP1",   column=name,s,x,y,px,py;
+	select, flag=twiss, pattern="IP2",   column=name,s,x,y,px,py;
+	select, flag=twiss, pattern="IP5",   column=name,s,x,y,px,py;
+	select, flag=twiss, pattern="IP8",   column=name,s,x,y,px,py;
+	twiss, sequence=lhcb2, file=twiss.b2;system,"cat twiss.b2";
+!*/
 system,"rm -f twiss.b1";system,"rm -f twiss.b2";
 
-Use, sequence=lhcb1;
-select,flag=twiss,clear;
-select, flag=twiss, pattern="IP1",   column=name,s,betx,bety,alfx,alfy,dx,dpx,mux,muy;
-select, flag=twiss, pattern="IP2",   column=name,s,betx,bety,alfx,alfy,dx,dpx,mux,muy;
-select, flag=twiss, pattern="IP5",   column=name,s,betx,bety,alfx,alfy,dx,dpx,mux,muy;
-select, flag=twiss, pattern="IP8",   column=name,s,betx,bety,alfx,alfy,dx,dpx,mux,muy;
-twiss,sequence=lhcb1,file=twiss.b1;system,"cat twiss.b1";
-
-Use, sequence=lhcb2;
-select,flag=twiss,clear;
-select, flag=twiss, pattern="IP1",   column=name,s,betx,bety,alfx,alfy,dx,dpx,mux,muy;
-select, flag=twiss, pattern="IP2",   column=name,s,betx,bety,alfx,alfy,dx,dpx,mux,muy;
-select, flag=twiss, pattern="IP5",   column=name,s,betx,bety,alfx,alfy,dx,dpx,mux,muy;
-select, flag=twiss, pattern="IP8",   column=name,s,betx,bety,alfx,alfy,dx,dpx,mux,muy;
-twiss, sequence=lhcb2,file=twiss.b2;system,"cat twiss.b2";
-
-system,"rm -f twiss.b1";system,"rm -f twiss.b2";
-on_x1:=1;on_x5:=1;on_sep1:=1;on_sep5:=1;
-on_x2:=1;on_x8:=1;on_sep2:=1;on_sep8:=1;on_lhcb:=-1;on_alice:=1;
-
+if (mylhcbeam<3){
 Use, sequence=lhcb1;
 select,flag=twiss,clear;
 select, flag=twiss, pattern="IP1",   column=name,s,x,y,px,py;
@@ -135,6 +256,12 @@ select, flag=twiss, pattern="IP2",   column=name,s,x,y,px,py;
 select, flag=twiss, pattern="IP5",   column=name,s,x,y,px,py;
 select, flag=twiss, pattern="IP8",   column=name,s,x,y,px,py;
 twiss, sequence=lhcb1, file=twiss.b1;system,"cat twiss.b1";
+};
+
+xnom1=table(twiss,IP1,x);pxnom1=table(twiss,IP1,px);ynom1=table(twiss,IP1,y);pynom1=table(twiss,IP1,py);
+xnom2=table(twiss,IP2,x);pxnom2=table(twiss,IP2,px);ynom2=table(twiss,IP2,y);pynom2=table(twiss,IP2,py);
+xnom5=table(twiss,IP5,x);pxnom5=table(twiss,IP5,px);ynom5=table(twiss,IP5,y);pynom5=table(twiss,IP5,py);
+xnom8=table(twiss,IP8,x);pxnom8=table(twiss,IP8,px);ynom8=table(twiss,IP8,y);pynom8=table(twiss,IP8,py);
 
 Use, sequence=lhcb2;
 select,flag=twiss,clear;
@@ -143,43 +270,63 @@ select, flag=twiss, pattern="IP2",   column=name,s,x,y,px,py;
 select, flag=twiss, pattern="IP5",   column=name,s,x,y,px,py;
 select, flag=twiss, pattern="IP8",   column=name,s,x,y,px,py;
 twiss, sequence=lhcb2, file=twiss.b2;system,"cat twiss.b2";
-*/
 
+value,xnom1,xnom2,xnom5,xnom8;
+value,ynom1,ynom2,ynom5,ynom8;
+value,pxnom1,pxnom2,pxnom5,pxnom8;
+value,pynom1,pynom2,pynom5,pynom8;
+
+!*/
 
 !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++;
-!     Xscheme definition  & Beam-beam encounters installation (only when ON_BB_SWITCH=1)
+!     Xscheme definition   & Beam-beam encounters installation
 !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++;
 call,file="slhc/beambeam/macro_bb.madx";                  ! macros for beam-beam
 
 
-!Switch on Xscheme in precollsion
-on_x1:=1; on_sep1:=1;
-on_x2:=1; on_sep2:=1; on_alice:=1;
-on_x5:=1; on_sep5:=1;
-on_x8:=1; on_sep8:=1; on_lhcb :=-1;
-on0_disp=on_disp;on_disp:=0;
+b_t_dist =25;        !bunch separation [ns]
 
-fraction_crab:=0;      !Switch on/off the crab of the strong beam (1 means 100%, -2 means -200%,..) 
+fraction_crab:=0;  !Switch on/off the crab of the strong beam (1 means 100%, -2 means -200%,..)
 
-n_insideD1 = 0;        ! number of additionnal parasitic encounters inside D1
+n_insideD1 = 5;    !default value for the number of additionnal parasitic encounters inside D1
 
-nho_IR1= 5;            ! number of slices for head-on in IR1 (between 0 and 201)   
-nho_IR2= 5;            ! number of slices for head-on in IR2 (between 0 and 201)
-nho_IR5= 5;            ! number of slices for head-on in IR5 (between 0 and 201)
-nho_IR8= 5;            ! number of slices for head-on in IR8 (between 0 and 201)
+nho_IR1= 5;        ! number of slices for head-on in IR1 (between 0 and 201)   
+nho_IR2= 5;        ! number of slices for head-on in IR2 (between 0 and 201)
+nho_IR5= 5;        ! number of slices for head-on in IR5 (between 0 and 201)
+nho_IR8= 5;        ! number of slices for head-on in IR8 (between 0 and 201)
 
 exec DEFINE_BB_PARAM;  !Define main beam-beam parameters
 
 if (ON_COLLISION==1)
 {
+ !Switch on Xscheme in precollision
+ on_x1aux=on_x1;on_sep1aux=1;
+ on_x2aux=on_x2;on_sep2aux=1;
+ on_x5aux=on_x5;on_sep5aux=1;
+ on_x8aux=on_x8;on_sep8aux=1; on_a8aux=on_a8;
+ on_aliceaux=on_alice; on_lhcbaux=on_lhcb;
+ on_disp:=0;
  halo1=0;halo2=5;halo5=0;halo8=0;  !halo collision at 5 sigma's in Alice
  !Redefine the on_sep's accordingly
  exec CALCULATE_XSCHEME($halo1,$halo2,$halo5,$halo8);
+ on_sep1aux=on_sep1;
+ on_sep2aux=on_sep2;
+ on_sep5aux=on_sep5;
+ on_sep8aux=on_sep8;
 };
+
+! Saving crossing scheme knobs
+on_x1aux=on_x1;on_sep1aux=on_sep1;
+on_x2aux=on_x2;on_sep2aux=on_sep2;
+on_x5aux=on_x5;on_sep5aux=on_sep5;
+on_x8aux=on_x8;on_sep8aux=on_sep8; on_a8aux=on_a8;
+on_aliceaux=on_alice; on_lhcbaux=on_lhcb;
+!on_dispaux=on_disp;
+on_disp=0; !see old mask don't know why
 
 !Record the nominal IP position and crossing angle
 if(mylhcbeam==1) {use,  sequence=lhcb1;};
-if(mylhcbeam==2) {use,  sequence=lhcb2;};
+if(mylhcbeam>1) {use,  sequence=lhcb2;};
 twiss;
 xnom1=table(twiss,IP1,x);pxnom1=table(twiss,IP1,px);ynom1=table(twiss,IP1,y);pynom1=table(twiss,IP1,py);
 xnom2=table(twiss,IP2,x);pxnom2=table(twiss,IP2,px);ynom2=table(twiss,IP2,y);pynom2=table(twiss,IP2,py);
@@ -206,10 +353,15 @@ on_ho5 =1; on_lr5l = 1; on_lr5r = 1; npara_5 = npara0_5 + n_insideD1;
 on_ho2 =1; on_lr2l = 1; on_lr2r = 1; npara_2 = npara0_2 + n_insideD1;
 on_ho8 =1; on_lr8l = 1; on_lr8r = 1; npara_8 = npara0_8 + n_insideD1;
 if(mylhcbeam==1) {exec INSTALL_BB_LENS(b1);};
-if(mylhcbeam==2) {exec INSTALL_BB_LENS(b2);};
+if(mylhcbeam>1) {exec INSTALL_BB_LENS(b2);};
 
 ON_BB_CHARGE := 0; !Switch off the charge the bb lenses
 
+!!Install Crab Cavities for the weak beam
+!call,file="slhc12/toolkit/enable_crabcavities.madx";
+!on_crab1=0.5; 
+!on_crab5=0.5;
+!!All the 4 cavities are installed but their voltage is reduced
 
 /*
 !Plot b-b separation
@@ -244,7 +396,7 @@ select,flag=twiss,class=marker,pattern=IP5,column=s,name,betx,bety,alfx,alfy,mux
 twiss,file=twiss_bb.b2;system,"cat twiss_bb.b2";
 
 if(mylhcbeam==1) {use,sequence=lhcb1;};
-if(mylhcbeam==2) {use,sequence=lhcb2;};
+if(mylhcbeam>1) {use,sequence=lhcb2;};
 
 select,flag=twiss,clear;
 select,flag=twiss,pattern=HO,class=beambeam,column=s,name,betx,bety,alfx,alfy,mux,muy,x,y,px,py;
@@ -260,16 +412,32 @@ exec REMOVE_BB_MARKER;
 /*
 !Make and plot footprint (at 6 sigmas)
 ON_BB_CHARGE := 1;
+
+!Switch on Xscheme
+on_x1=on_x1aux;on_sep1=on_sep1aux;
+on_x2=on_x2aux;on_sep2=on_sep2aux;
+on_x5=on_x5aux;on_sep5=on_sep5aux;
+on_x8=on_x8aux;on_sep8=on_sep8aux; on_a8=an_a8aux;
+on_alice=on_aliceaux; on_lhcb=on_lhcbaux;
+on_disp=on_dispaux;
+
 nsigmax=6;
-if(qx0-qx00==0.28){
+
+if(qx0-qx00<0.3){
 if(mylhcbeam==1) {exec MAKEFOOTPRINT(b1);exec PLOTFOOTPRINT(b1,0.2795,0.2805,0.3095,0.3105);};
-if(mylhcbeam==2) {exec MAKEFOOTPRINT(b2);exec PLOTFOOTPRINT(b2,0.2795,0.2805,0.3095,0.3105);};
+if(mylhcbeam>1) {exec MAKEFOOTPRINT(b2);exec PLOTFOOTPRINT(b2,0.2795,0.2805,0.3095,0.3105);};
 };
-if(qx0-qx00==0.31){
+if(qx0-qx00>0.3){
 if(mylhcbeam==1) {exec MAKEFOOTPRINT(b1);exec PLOTFOOTPRINT(b1,0.300,0.315,0.310,0.325);};
-if(mylhcbeam==2) {exec MAKEFOOTPRINT(b2);exec PLOTFOOTPRINT(b2,0.300,0.315,0.310,0.325);};
+if(mylhcbeam>1) {exec MAKEFOOTPRINT(b2);exec PLOTFOOTPRINT(b2,0.300,0.315,0.310,0.325);};
 };
 ON_BB_CHARGE := 0;
+on_x1=0;on_sep1=0;
+on_x2=0;on_sep2=0;
+on_x5=0;on_sep5=0;
+on_x8=0;on_sep8=0; on_a8=0;
+on_alice=0; on_lhcb=0;
+on_disp=0;
 */
 
 !Remove bb lens for both beams
@@ -277,19 +445,42 @@ ON_BB_CHARGE := 0;
 
 };
 
-
+/*
 !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++;
-!                        Sequence & Beam selection
+!                        TEST the crossing scheme
 !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++;
+! restoring crossing knobs
+on_x1=on_x1aux;on_sep1=on_sep1aux;
+on_x2=on_x2aux;on_sep2=on_sep2aux;
+on_x5=on_x5aux;on_sep5=on_sep5aux;
+on_x8=on_x8aux;on_sep8=on_sep8aux;on_a8=on_a8aux;
+on_alice=on_aliceaux; on_lhcb=on_lhcbaux;
+on_disp=on_dispaux;
 
-if(mylhcbeam==1) {use,  sequence=lhcb1;};
-if(mylhcbeam==2) {use,  sequence=lhcb2;};
+Use, sequence=lhcb1;
+select,flag=twiss,clear;
+select, flag=twiss, pattern="IP1",   column=name,s,x,y,px,py;
+select, flag=twiss, pattern="IP2",   column=name,s,x,y,px,py;
+select, flag=twiss, pattern="IP5",   column=name,s,x,y,px,py;
+select, flag=twiss, pattern="IP8",   column=name,s,x,y,px,py;
+twiss, sequence=lhcb1, file=twiss.b1;system,"cat twiss.b1";
 
-!!!!!!!!!!!!NO LONGER ANY "USE" AFTER THIS POINT
+Use, sequence=lhcb2;
+select,flag=twiss,clear;
+select, flag=twiss, pattern="IP1",   column=name,s,x,y,px,py;
+select, flag=twiss, pattern="IP2",   column=name,s,x,y,px,py;
+select, flag=twiss, pattern="IP5",   column=name,s,x,y,px,py;
+select, flag=twiss, pattern="IP8",   column=name,s,x,y,px,py;
+twiss, sequence=lhcb2, file=twiss.b2;system,"cat twiss.b2";
+*/
+
+
 
 !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++;
 !               Prepare nominal twiss tables
 !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++;
+if (mylhcbeam==1) { use,sequence=lhcb1;}
+else {use,sequence=lhcb2;};
 
 /*
  twiss;
@@ -297,19 +488,14 @@ if(mylhcbeam==2) {use,  sequence=lhcb2;};
  y.ip1=table(twiss,IP1,y);px.ip1=table(twiss,IP1,py); //irrelevant when recycling the sequences
 */
 
-! Record actual Xschemes
+! disable crossing bumps
+on_x1=0;on_sep1=0;
+on_x2=0;on_sep2=0;
+on_x5=0;on_sep5=0;
+on_x8=0;on_sep8=0; on_a8=0;
+on_alice=0;on_lhcb=0;
+on_disp=0;
 
- on0_x1=on_x1; on0_sep1=on_sep1;
- on0_x2=on_x2; on0_sep2=on_sep2; on0_alice=on_alice;
- on0_x5=on_x5; on0_sep5=on_sep5;
- on0_x8=on_x8; on0_sep8=on_sep8; on0_lhcb =on_lhcb;
-
-! Switch off Xschemes
-
- on_x1:=0; on_sep1:=0;
- on_x2:=0; on_sep2:=0; on_alice:=0;
- on_x5:=0; on_sep5:=0;
- on_x8:=0; on_sep8:=0; on_lhcb :=0;
  twiss, table=nominal;   // used by orbit correction
  beta.ip1=table(twiss,IP1,betx);value,beta.ip1;
 
@@ -356,7 +542,22 @@ if(mylhcbeam==2) {use,  sequence=lhcb2;};
 !                   Align separation magnets
 !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
+
+!if(mylhcbeam==1)
+!{call, file = "db5/measured_errors/align_D1_slices.b1.madx";
+!call, file = "db5/measured_errors/align_D2_slices.b1.madx";
+!call, file = "db5/measured_errors/align_D3_slices.b1.madx";
+!call, file = "db5/measured_errors/align_D4_slices.b1.madx";};
+!
+!if(mylhcbeam>1)
+!{call, file = "db5/measured_errors/align_D1_slices.b2.madx";
+!call, file = "db5/measured_errors/align_D2_slices.b2.madx";
+!call, file = "db5/measured_errors/align_D3_slices.b2.madx";
+!call, file = "db5/measured_errors/align_D4_slices.b2.madx";};
+
 call,file="slhc/toolkit/align_sepdip.madx";
+!exec,align_mbxw;  ! V6.503  D1
+!exec,align_mbrc15;! V6.503 D2 in IR15
 exec,align_mbx15; ! HL-LHC D1
 exec,align_mbrd15;! HL-LHC D2 in IR15
 
@@ -364,6 +565,7 @@ exec,align_mbx28; ! V6.503 D1 in IR28
 exec,align_mbrc28;! V6.503 D2 in IR28
 exec,align_mbrs;  ! V6.503 D3 in IR4
 exec,align_mbrb;  ! V6.503 D4 in IR4
+
 call,file="slhc/toolkit/align_mbh.madx"; ! align 11T dipoles
 
 
@@ -374,33 +576,40 @@ call,file="slhc/toolkit/align_mbh.madx"; ! align 11T dipoles
 
 ! Error routine and measured error table for nominal LHC
 
-call,file="db5/measured_errors/Msubroutines.madx";
+call,file="db5/measured_errors/Msubroutines_new.madx";
+call,file="db5/measured_errors/Msubroutines_MS_MSS_MO_new.madx";
 call,file="db5/toolkit/Orbit_Routines.madx";
-call,file="slhc/errors/SelectLHCMonCor.madx";
+call,file="slhc/errors2/SelectLHCMonCor.madx";
 readtable, file="db5/measured_errors/rotations_Q2_integral.tab";
 
 ! Error routine and error table for new IT/D1/D2/Q4/Q5
 
-call,file="slhc/errors/macro_error.madx";   ! macros for error generation in the new IT/D1's
-call,file="slhc/errors/IT_errortable_v66";! target error table for the new IT
-call,file="slhc/errors/D1_errortable_v1";! target error table for the new D1
-call,file="slhc/errors/D2_errortable_v4";! target error table for the new D2
-call,file="slhc/errors/Q4_errortable_v1";! target error table for the new Q4 in IR1 and IR5
-call,file="slhc/errors/Q5_errortable_v0";! target error table for the new Q5 in IR1 and IR5 and IR6
+call,file="slhc/errors2/macro_error.madx";   ! macros for error generation in the new IT/D1's
+call,file="slhc/errors2/ITa_errortable_v5"; ! target error table for the new IT
+call,file="slhc/errors2/ITb_errortable_v5"; ! target error table for the new IT
+call,file="slhc/errors2/D1_errortable_v1_spec";! target error table for the new D1
+call,file="slhc/errors2/D2_errortable_v5_spec";! target error table for the new D2
+call,file="slhc/errors2/Q4_errortable_v2_spec";! target error table for the new Q4 in IR1 and IR5
+call,file="slhc/errors2/Q5_errortable_v0_spec";! target error table for the new Q5 in IR1 and IR5 and IR6
 !value,Rr_MQXCD,Rr_MBXAB,Rr_MBRD,Rr_MQYY,Rr_MQYL;
 !a2R_MQXCD_inj:=20.00;a2R_MQXCD_col:=20.00;! up to 3 mrad roll of the new MQX's (1 mrad r.m.s)
 
-call,file="slhc/errors/MBH_errortable_v1";
+!b5M_MQXCD_col  :=  0.0000 ; b5U_MQXCD_col  :=  0.4200 ; b5R_MQXCD_col  :=  0.4200 ; !..Errors as in IT_errortable_v3
+!a5M_MQXCD_col  :=  0.0000 ; a5U_MQXCD_col  :=  0.4300 ; a5R_MQXCD_col  :=  0.4300 ; !..Errors as in IT_errortable_v3
+!a6M_MQXCD_col  :=  0.0000 ; a6U_MQXCD_col  :=  0.3100 ; a6R_MQXCD_col  :=  0.3100 ; !..Errors as in IT_errortable_v3
+
+
+call,file="slhc/errors2/MBH_errortable_v1";
 
 !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 !                Switch ON/OFF some multipole
 !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 exec ON_ALL_MULT;
-ON_LSF:=1;             ! to be set to 0 if run is performed on BOINC.
+ON_LSF=1;
 
  ON_A1s =  0 ; ON_A1r =  0 ; ON_B1s =  0 ; ON_B1r =  0;
- ON_A2s =  1 ; ON_A2r =  1 ; ON_B2s =  1 ; ON_B2r =  1;
+ ON_A2s =  0 ; ON_A2r =  0 ; ON_B2s =  0 ; ON_B2r =  0;
  ON_A3s =  1 ; ON_A3r =  1 ; ON_B3s =  1 ; ON_B3r =  1;
  ON_A4s =  1 ; ON_A4r =  1 ; ON_B4s =  1 ; ON_B4r =  1;
  ON_A5s =  1 ; ON_A5r =  1 ; ON_B5s =  1 ; ON_B5r =  1;
@@ -414,7 +623,6 @@ ON_LSF:=1;             ! to be set to 0 if run is performed on BOINC.
  ON_A13s =  ON_LSF; ON_A13r = ON_LSF; ON_B13s = ON_LSF; ON_B13r =  ON_LSF;
  ON_A14s =  ON_LSF; ON_A14r = ON_LSF; ON_B14s = ON_LSF; ON_B14r =  ON_LSF;
  ON_A15s =  ON_LSF; ON_A15r = ON_LSF; ON_B15s = ON_LSF; ON_B15r =  ON_LSF;
-
 
 !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 ! Define the seed number (for statistical error assignment in the new IT/D1)
@@ -480,28 +688,63 @@ ON_B2Saux=on_B2S;on_B2S=0*ON_B2Saux;call,file="db5/measured_errors/Efcomp_MQM.ma
 ON_B2Saux=on_B2S;on_B2S=0*ON_B2Saux;call,file="db5/measured_errors/Efcomp_MQML.madx"; on_B2S=ON_B2Saux;
 ON_B2Saux=on_B2S;on_B2S=0*ON_B2Saux;call,file="db5/measured_errors/Efcomp_MQ.madx"  ; on_B2S=ON_B2Saux;
 
+! call, files="db5/measured_errors/Set_alignment_errors.madx";
+
 ! New IT/D1/D2/Q4/Q5
 myseed=%SEEDRAN;
-eoption,seed=myseed+101;call, file="slhc/errors/Efcomp_MQXF.madx";      ! new IT in IR1/5
-eoption,seed=myseed+102;call, file="slhc/errors/Efcomp_MBXAB.madx" ;     ! new D1 in IR1/5
-eoption,seed=myseed+104;call, file="slhc/errors/Efcomp_MQYY.madx" ;      ! new Q4 in IR1/5
-eoption,seed=myseed+105;call, file="slhc/errors/Efcomp_MQYL.madx" ;      ! new Q5 in IR1/5/6
-
+eoption,seed=myseed+101;
+call, file="slhc/errors2/Efcomp_MQXFA.madx";      ! new IT in IR1/5
+call, file="slhc/errors2/Efcomp_MQXFB.madx";
+eoption,seed=myseed+102;call, file="slhc/errors2/Efcomp_MBXAB.madx";     ! new D1 in IR1/5
+eoption,seed=myseed+104;call, file="slhc/errors2/Efcomp_MQYY.madx";     ! new Q4 in IR1/5
+eoption,seed=myseed+105;call, file="slhc/errors2/Efcomp_MQYL.madx";      ! new Q5 in IR1/5/6
 ON_B2s = 0; ON_B2r = 0;
- eoption,seed=myseed+103;call, file="slhc/errors/Efcomp_MBRD.madx" ;      ! new D2 in IR1/5
-exec show_error_newHLmagnet;
+ eoption,seed=myseed+103;call, file="slhc/errors2/Efcomp_MBRD.madx";     ! new D2 in IR1/5
+!exec show_error_newHLmagnet;
 
-call, file="slhc/errors/Efcomp_MBH.madx";
+
+call, file="slhc/errors2/Efcomp_MBH.madx";
+
+!select, flag=error, clear;
+!select, flag=error, pattern=".";
+!esave,  file="error_all.tfs";
+
+!+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+! MO settings
+!+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+brho:=NRJ*1e9/clight;
+if (mylhcbeam==1){
+KOF.A12B1:=Kmax_MO*I_MO/Imax_MO/brho; KOF.A23B1:=Kmax_MO*I_MO/Imax_MO/brho;
+KOF.A34B1:=Kmax_MO*I_MO/Imax_MO/brho; KOF.A45B1:=Kmax_MO*I_MO/Imax_MO/brho;
+KOF.A56B1:=Kmax_MO*I_MO/Imax_MO/brho; KOF.A67B1:=Kmax_MO*I_MO/Imax_MO/brho;
+KOF.A78B1:=Kmax_MO*I_MO/Imax_MO/brho; KOF.A81B1:=Kmax_MO*I_MO/Imax_MO/brho;
+KOD.A12B1:=Kmax_MO*I_MO/Imax_MO/brho; KOD.A23B1:=Kmax_MO*I_MO/Imax_MO/brho;
+KOD.A34B1:=Kmax_MO*I_MO/Imax_MO/brho; KOD.A45B1:=Kmax_MO*I_MO/Imax_MO/brho;
+KOD.A56B1:=Kmax_MO*I_MO/Imax_MO/brho; KOD.A67B1:=Kmax_MO*I_MO/Imax_MO/brho;
+KOD.A78B1:=Kmax_MO*I_MO/Imax_MO/brho; KOD.A81B1:=Kmax_MO*I_MO/Imax_MO/brho;
+};
+
+if (mylhcbeam>1){
+KOF.A12B2:=Kmax_MO*I_MO/Imax_MO/brho; KOF.A23B2:=Kmax_MO*I_MO/Imax_MO/brho;
+KOF.A34B2:=Kmax_MO*I_MO/Imax_MO/brho; KOF.A45B2:=Kmax_MO*I_MO/Imax_MO/brho;
+KOF.A56B2:=Kmax_MO*I_MO/Imax_MO/brho; KOF.A67B2:=Kmax_MO*I_MO/Imax_MO/brho;
+KOF.A78B2:=Kmax_MO*I_MO/Imax_MO/brho; KOF.A81B2:=Kmax_MO*I_MO/Imax_MO/brho;
+KOD.A12B2:=Kmax_MO*I_MO/Imax_MO/brho; KOD.A23B2:=Kmax_MO*I_MO/Imax_MO/brho;
+KOD.A34B2:=Kmax_MO*I_MO/Imax_MO/brho; KOD.A45B2:=Kmax_MO*I_MO/Imax_MO/brho;
+KOD.A56B2:=Kmax_MO*I_MO/Imax_MO/brho; KOD.A67B2:=Kmax_MO*I_MO/Imax_MO/brho;
+KOD.A78B2:=Kmax_MO*I_MO/Imax_MO/brho; KOD.A81B2:=Kmax_MO*I_MO/Imax_MO/brho;
+};
 
 
 !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-!               correction of field errors in MB (compatible with V6.503 & slhc)
+!               correction of field errors in MB (compatible with V6.503 & SLHC)
 !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
  select, flag=error, clear;
  select, flag=error, pattern=MB\.,class=multipole;
  select, flag=error, pattern=MBH\.,class=multipole;
  esave,  file="temp/MB.errors";
- system, "slhc/errors/corr_MB_ats_v3";
+ system, "slhc/errors2/corr_MB_ats_v3";
  call,   file="temp/MB_corr_setting.mad";
 !exec reset_MB_corr;
 
@@ -516,8 +759,9 @@ if (NRJ>5000.0000)
  select, flag=error, pattern=MBX,  class=multipole;
  select, flag=error, pattern=MBRC, class=multipole;
  select, flag=error, pattern=MBRD, class=multipole;
+ select, flag=error, pattern=MCBXF, class=multipole;
  esave,  file="temp/tripD1D2.errors";
- system, "slhc/errors/corr_tripD1_v3";
+ system, "slhc/errors2/corr_tripD1_v5";
  call,   file="temp/MCX_setting.mad";
 !kcsx3.l1:=0 ;kcsx3.r1:=0 ;kcsx3.l5:=0 ;kcsx3.r5:=0 ; !switch off b3  correction in IR1 and IR5
 !kcox3.l1:=0 ;kcox3.r1:=0 ;kcox3.l5:=0 ;kcox3.r5:=0 ; !switch off b4  correction in IR1 and IR5
@@ -528,6 +772,13 @@ if (NRJ>5000.0000)
 !kcosx3.l1:=0;kcosx3.r1:=0;kcosx3.l5:=0;kcosx3.r5:=0; !switch off a4  correction in IR1 and IR5
 !kcdsx3.l1:=0;kcdsx3.r1:=0;kcdsx3.l5:=0;kcdsx3.r5:=0; !switch off a5  correction in IR1 and IR5
 !kctsx3.l1:=0;kctsx3.r1:=0;kctsx3.l5:=0;kctsx3.r5:=0; !switch off a6  correction in IR1 and IR5
+
+ kcsx3.l2 :=0;kcsx3.r2 :=0;kcsx3.l8 :=0;kcsx3.r8 :=0; !switch off b3  correction in IR2 and IR8
+ kcox3.l2 :=0;kcox3.r2 :=0;kcox3.l8 :=0;kcox3.r8 :=0; !switch off b4  correction in IR2 and IR8
+ kctx3.l2 :=0;kctx3.r2 :=0;kctx3.l8 :=0;kctx3.r8 :=0; !switch off b6  correction in IR2 and IR8
+ kqsx3.l2 :=0;kqsx3.r2 :=0;kqsx3.l8 :=0;kqsx3.r8 :=0; !switch off a2  correction in IR2 and IR8
+ kcssx3.l2:=0;kcssx3.r2:=0;kcssx3.l8:=0;kcssx3.r8:=0; !switch off a3  correction in IR2 and IR8
+ kcosx3.l2:=0;kcosx3.r2:=0;kcosx3.l8:=0;kcosx3.r8:=0; !switch off a4  correction in IR2 and IR8
 
 !exec reset_MQX_corr;                             !switch off all IT multipole correction in all IR's
 };
@@ -552,13 +803,13 @@ if((ON_A1S)^2+(ON_A1r)^2+(ON_B1S)^2+(ON_B1r)^2 >0)
 
 
 ! end of orbit correction, now switch ON crossing scheme
- on_x1=on0_x1; on_sep1=on0_sep1;
- on_x2=on0_x2; on_sep2=on0_sep2; on_alice=on0_alice;
- on_x5=on0_x5; on_sep5=on0_sep5;
- on_x8=on0_x8; on_sep8=on0_sep8; on_lhcb =on0_lhcb;
- on_disp=on0_disp;
-
-value,on_x1,on_x2,on_x5,on_x8,on_sep1,on_sep2,on_sep5,on_sep8,on_alice,on_lhcb,on_disp;
+! restoring crossing angle
+on_x1=on_x1aux;on_sep1=on_sep1aux;
+on_x2=on_x2aux;on_sep2=on_sep2aux;
+on_x5=on_x5aux;on_sep5=on_sep5aux;
+on_x8=on_x8aux;on_sep8=on_sep8aux; on_a8=on_a8aux;
+on_alice=on_aliceaux; on_lhcb=on_lhcbaux;
+on_disp=on_dispaux;
 
 ! coguess,x=x.ip1,px=px.ip1,y=y.ip1,py=py.ip1;
 
@@ -566,8 +817,7 @@ value,on_x1,on_x2,on_x5,on_x8,on_sep1,on_sep2,on_sep5,on_sep8,on_alice,on_lhcb,o
 !   Fine tuning of coupling after CO correction and with Xscheme
 !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-call,file="slhc/errors/FineCouplingCorrection.madx";
-
+call,file="slhc/errors2/FineCouplingCorrection.madx";
 
 !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 !                 matching of orbit, tune and chromaticity
@@ -616,7 +866,7 @@ if(mylhcbeam>1)
 !                 Check corrector strength
 !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-call, file="slhc/errors/corr_value.madx";
+call, file="slhc/errors2/corr_value.madx";
 
 !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 !                 final twiss before sending to sixtrack
@@ -634,20 +884,28 @@ twiss;
  sixtrack, radius=0.017;
 */
 
-!/*
 if (NRJ<4999.9999) {VRF400:=8. ;LAGRF400.B1=0.5;LAGRF400.B2=0.;};
 if (NRJ>5000.0000) {VRF400:=16.;LAGRF400.B1=0.5;LAGRF400.B2=0.;};
 twiss;
-!emit;
- value, table(summ,q1);
- value, table(summ,q2);
- value, table(summ,dq1);
- value, table(summ,dq2);
- sixtrack,cavall, radius=0.017;
-!*/
+xnom1=table(twiss,IP1,x);pxnom1=table(twiss,IP1,px);ynom1=table(twiss,IP1,y);pynom1=table(twiss,IP1,py);
+xnom2=table(twiss,IP2,x);pxnom2=table(twiss,IP2,px);ynom2=table(twiss,IP2,y);pynom2=table(twiss,IP2,py);
+xnom5=table(twiss,IP5,x);pxnom5=table(twiss,IP5,px);ynom5=table(twiss,IP5,y);pynom5=table(twiss,IP5,py);
+xnom8=table(twiss,IP8,x);pxnom8=table(twiss,IP8,px);ynom8=table(twiss,IP8,y);pynom8=table(twiss,IP8,py);
+
+
+value,xnom1,xnom2,xnom5,xnom8;
+value,ynom1,ynom2,ynom5,ynom8;
+value,pxnom1,pxnom2,pxnom5,pxnom8;
+value,pynom1,pynom2,pynom5,pynom8;
+value, table(summ,q1);
+value, table(summ,q2);
+value, table(summ,dq1);
+value, table(summ,dq2);
+!sixtrack,cavall, mult_auto_off,radius=0.017;
+sixtrack,cavall, radius=0.017;
 
 select, flag=twiss, clear;
 twiss,file="last_twiss.%SEEDRAN";
 System,"gzip last_twiss.%SEEDRAN";
-
+!emit;
 stop;
