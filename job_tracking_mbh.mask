@@ -585,12 +585,15 @@ readtable, file="db5/measured_errors/rotations_Q2_integral.tab";
 ! Error routine and error table for new IT/D1/D2/Q4/Q5
 
 call,file="slhc/errors2/macro_error.madx";   ! macros for error generation in the new IT/D1's
-call,file="slhc/errors2/ITa_errortable_v5"; ! target error table for the new IT
-call,file="slhc/errors2/ITb_errortable_v5"; ! target error table for the new IT
-call,file="slhc/errors2/D1_errortable_v1_spec";! target error table for the new D1
-call,file="slhc/errors2/D2_errortable_v5_spec";! target error table for the new D2
-call,file="slhc/errors2/Q4_errortable_v2_spec";! target error table for the new Q4 in IR1 and IR5
-call,file="slhc/errors2/Q5_errortable_v0_spec";! target error table for the new Q5 in IR1 and IR5 and IR6
+!call,file="slhc/errors2/ITa_errortable_v5"; ! target error table for the new IT
+!call,file="slhc/errors2/ITb_errortable_v5"; ! target error table for the new IT
+call,file="slhc/errors2/ITnc_errortable_v5"; ! target error table for the new IT
+call,file="slhc/errors2/ITcs_errortable_v5"; ! target error table for the new IT
+call,file="slhc/errors2/ITbody_errortable_v5"; ! target error table for the new IT
+call,file="slhc/errors2/D1_errortable_v1";! target error table for the new D1
+call,file="slhc/errors2/D2_errortable_v5";! target error table for the new D2
+call,file="slhc/errors2/Q4_errortable_v2";! target error table for the new Q4 in IR1 and IR5
+call,file="slhc/errors2/Q5_errortable_v0";! target error table for the new Q5 in IR1 and IR5 and IR6
 !value,Rr_MQXCD,Rr_MBXAB,Rr_MBRD,Rr_MQYY,Rr_MQYL;
 !a2R_MQXCD_inj:=20.00;a2R_MQXCD_col:=20.00;! up to 3 mrad roll of the new MQX's (1 mrad r.m.s)
 
@@ -693,8 +696,10 @@ ON_B2Saux=on_B2S;on_B2S=0*ON_B2Saux;call,file="db5/measured_errors/Efcomp_MQ.mad
 ! New IT/D1/D2/Q4/Q5
 myseed=%SEEDRAN;
 eoption,seed=myseed+101;
-call, file="slhc/errors2/Efcomp_MQXFA.madx";      ! new IT in IR1/5
-call, file="slhc/errors2/Efcomp_MQXFB.madx";
+!call, file="slhc/errors2/Efcomp_MQXFA.madx";      ! new IT in IR1/5
+!call, file="slhc/errors2/Efcomp_MQXFB.madx";
+eoption,seed=myseed+101; call, file="slhc/errors/Efcomp_MQXFbody-s.madx"; ! new IT in IR1/5
+call, file="slhc/errors/Efcomp_MQXFends.madx";                            ! new IT in IR1/5
 eoption,seed=myseed+102;call, file="slhc/errors2/Efcomp_MBXAB.madx";     ! new D1 in IR1/5
 eoption,seed=myseed+104;call, file="slhc/errors2/Efcomp_MQYY.madx";     ! new Q4 in IR1/5
 eoption,seed=myseed+105;call, file="slhc/errors2/Efcomp_MQYL.madx";      ! new Q5 in IR1/5/6
