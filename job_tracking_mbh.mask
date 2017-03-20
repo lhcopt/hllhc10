@@ -21,6 +21,9 @@ call,file="slhc/toolkit/macro.madx";        !Call some macro facilities
 !mylhcbeam=2 ;! LHC beam 2 (clockwise)
 !mylhcbeam=4 ;! LHC beam 2 (counterclockwise)
 
+! Set this flag if the file is not used as a mask file (sets %SEEDRAN to 1)
+not_a_mask=0;
+
 
 !!********************************************************************
 !!Manual Thin Sequence building
@@ -58,9 +61,14 @@ exec,myslice;
 !   call,file="slhc/hllhc_thin.seq"; bvaux=-1;};
 !Option, -echo,warn,-info;
 
+call,file="slhc/errors2/install_mqxf_fringenl.madx";    ! adding fringe place holder
+call,file="slhc/errors2/install_MCBXAB_errors.madx";    ! adding multipole correctors in IR1/5 (for errors)
+
 !Cycling w.r.t. to IP3 (mandatory to find closed orbit in collision in the presence of errors)
 seqedit,sequence=lhcb1;flatten;cycle,start=IP3;flatten;endedit;
-seqedit,sequence=lhcb2;flatten;cycle,start=IP3;flatten;endedit;
+if (mylhcbeam<3){
+    seqedit,sequence=lhcb1;flatten;cycle,start=IP3;flatten;endedit;
+};
 
 !********************************************
 
@@ -368,9 +376,10 @@ exec PLOT_BB_SEP(8,$npara_8);
 */
 
 !/*
-!seqedit,sequence=lhcb1;flatten;cycle,start=IP1;endedit;
+!if (mylhcbeam<3){ seqedit,sequence=lhcb1;flatten;cycle,start=IP1;endedit; };
 !seqedit,sequence=lhcb2;flatten;cycle,start=IP1;endedit;
 
+if (mylhcbeam<3){
 use,sequence=lhcb1;
 select,flag=twiss,clear;
 select,flag=twiss,class=marker,pattern=PAR.*L1,range=mbxa.4l1..4/IP1.L1,column=s,name,betx,bety,alfx,alfy,mux,muy,x,y,px,py;
@@ -380,6 +389,7 @@ select,flag=twiss,class=marker,pattern=PAR.*R5,range=IP5/mbxa.4r5..1,column=s,na
 select,flag=twiss,class=marker,pattern=IP1,column=s,name,betx,bety,alfx,alfy,mux,muy,x,y,px,py;
 select,flag=twiss,class=marker,pattern=IP5,column=s,name,betx,bety,alfx,alfy,mux,muy,x,y,px,py;
 twiss,file=twiss_bb.b1;system,"cat twiss_bb.b1";
+};
 
 use,sequence=lhcb2;
 select,flag=twiss,clear;
@@ -398,7 +408,7 @@ select,flag=twiss,clear;
 select,flag=twiss,pattern=HO,class=beambeam,column=s,name,betx,bety,alfx,alfy,mux,muy,x,y,px,py;
 twiss,file=twiss_bb;system,"cat twiss_bb";
 
-!seqedit,sequence=lhcb1;flatten;cycle,start=IP3;endedit;
+!if (mylhcbeam<3){ seqedit,sequence=lhcb1;flatten;cycle,start=IP3;endedit; };
 !seqedit,sequence=lhcb2;flatten;cycle,start=IP3;endedit;
 !*/
 
@@ -453,6 +463,7 @@ on_x8=on_x8aux;on_sep8=on_sep8aux;on_a8=on_a8aux;
 on_alice=on_aliceaux; on_lhcb=on_lhcbaux;
 on_disp=on_dispaux;
 
+if (mylhcbeam<3){
 Use, sequence=lhcb1;
 select,flag=twiss,clear;
 select, flag=twiss, pattern="IP1",   column=name,s,x,y,px,py;
@@ -460,6 +471,7 @@ select, flag=twiss, pattern="IP2",   column=name,s,x,y,px,py;
 select, flag=twiss, pattern="IP5",   column=name,s,x,y,px,py;
 select, flag=twiss, pattern="IP8",   column=name,s,x,y,px,py;
 twiss, sequence=lhcb1, file=twiss.b1;system,"cat twiss.b1";
+};
 
 Use, sequence=lhcb2;
 select,flag=twiss,clear;
@@ -525,6 +537,7 @@ else {use,sequence=lhcb2;};
  select, flag=twiss, pattern=MCDX                  , column=name,betx,bety,x,y;
  select, flag=twiss, pattern=MCDSX                 , column=name,betx,bety,x,y;
  select, flag=twiss, pattern=MCTSX                 , column=name,betx,bety,x,y;
+ select, flag=twiss, pattern=MCBXF, class=multipole, column=name,betx,bety,x,y;
  twiss,  file='temp/optics0_inser.mad';
 
 ! disable crossing bumps
@@ -592,7 +605,12 @@ if (useMQXFAB) {
   call,file="slhc/errors2/ITcs_errortable_v5"; ! target error table for the new IT
 };
 call,file="slhc/errors2/D1_errortable_v1";! target error table for the new D1
-call,file="slhc/errors2/D2_errortable_v5";! target error table for the new D2
+
+! D2 errortable (the one used for correction)
+call,file="slhc/errors2/D2_errortable_v5";
+! We are only correcting the b3 errors, put the others to zero
+call,file="slhc/errors2/D2_empty_errortable";
+
 call,file="slhc/errors2/Q4_errortable_v2";! target error table for the new Q4 in IR1 and IR5
 call,file="slhc/errors2/Q5_errortable_v0";! target error table for the new Q5 in IR1 and IR5 and IR6
 !value,Rr_MQXCD,Rr_MBXAB,Rr_MBRD,Rr_MQYY,Rr_MQYL;
@@ -602,6 +620,7 @@ call,file="slhc/errors2/Q5_errortable_v0";! target error table for the new Q5 in
 !a5M_MQXCD_col  :=  0.0000 ; a5U_MQXCD_col  :=  0.4300 ; a5R_MQXCD_col  :=  0.4300 ; !..Errors as in IT_errortable_v3
 !a6M_MQXCD_col  :=  0.0000 ; a6U_MQXCD_col  :=  0.3100 ; a6R_MQXCD_col  :=  0.3100 ; !..Errors as in IT_errortable_v3
 
+call,file="slhc/errors2/MCBXFAB_errortable_v1";
 call,file="slhc/errors2/MBH_errortable_v1";
 
 !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -632,29 +651,13 @@ ON_LSF=1;
 ! and call the corresponding measured error table for nominal LHC magnets
 !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-!/*
-!For the mask file
-if (NRJ<4999.999) {readtable, file="wise/injection_errors-emfqcs-%SEEDRAN.tfs" ;};
-if (NRJ>5000.000) {readtable, file="wise/collision_errors-emfqcs-%SEEDRAN.tfs" ;};
-!*/
-
-/*
-!For the madx file
-if (NRJ<4999.999) {readtable, file="wise/injection_errors-emfqcs-1.tfs" ;};
-if (NRJ>5000.000) {readtable, file="wise/collision_errors-emfqcs-1.tfs" ;};
-*/
-
-/*
-!For the mask file
-if (NRJ<4999.999) {readtable, file="slhc/errors/FiDeL/injection/injection_errors-emfqcs-%SEEDRAN.tfs" ;};
-if (NRJ>5000.000) {readtable, file="slhc/errors/FiDeL/collision_7000/collision_7000_errors-emfqcs-%SEEDRAN.tfs" ;};
-*/
-
-/*
-!For the madx file
-if (NRJ<4999.999) {readtable, file="slhc/errors/FiDeL/injection/injection_errors-emfqcs-1.tfs" ;};
-if (NRJ>5000.000) {readtable, file="slhc/errors/FiDeL/collision_7000/collision_7000_errors-emfqcs-1.tfs" ;};
-*/
+if (not_a_mask==0){
+  if (NRJ<4999.999) {readtable, file="wise/injection_errors-emfqcs-%SEEDRAN.tfs" ;};
+  if (NRJ>5000.000) {readtable, file="wise/collision_errors-emfqcs-%SEEDRAN.tfs" ;};
+} else {
+  if (NRJ<4999.999) {readtable, file="wise/injection_errors-emfqcs-1.tfs" ;};
+  if (NRJ>5000.000) {readtable, file="wise/collision_errors-emfqcs-1.tfs" ;};
+};
 
 !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 !             apply field errors to MB magnets
@@ -691,10 +694,10 @@ ON_B2Saux=on_B2S;on_B2S=0*ON_B2Saux;call,file="db5/measured_errors/Efcomp_MQM.ma
 ON_B2Saux=on_B2S;on_B2S=0*ON_B2Saux;call,file="db5/measured_errors/Efcomp_MQML.madx"; on_B2S=ON_B2Saux;
 ON_B2Saux=on_B2S;on_B2S=0*ON_B2Saux;call,file="db5/measured_errors/Efcomp_MQ.madx"  ; on_B2S=ON_B2Saux;
 
-! call, files="db5/measured_errors/Set_alignment_errors.madx";
+! call, file="db5/measured_errors/Set_alignment_errors.madx";
 
 ! New IT/D1/D2/Q4/Q5
-myseed=%SEEDRAN;
+if (this_is_a_mask==1){ myseed=%SEEDRAN; } else { myseed=1; };
 eoption,seed=myseed+101;
 if (useMQXFAB) {
   call, file="slhc/errors2/Efcomp_MQXFA.madx";      ! new IT in IR1/5
@@ -704,14 +707,15 @@ if (useMQXFAB) {
   call, file="slhc/errors2/Efcomp_MQXFends.madx";                            ! new IT in IR1/5
 };
 eoption,seed=myseed+102;call, file="slhc/errors2/Efcomp_MBXAB.madx";    ! new D1 in IR1/5
+use_average_errors_MBRD=1;   ! using average errors for correction algorithm
+eoption,seed=myseed+103;call, file="slhc/errors2/Efcomp_MBRD.madx";   	! new D2 in IR1/5
 eoption,seed=myseed+104;call, file="slhc/errors2/Efcomp_MQYY.madx";     ! new Q4 in IR1/5
 eoption,seed=myseed+105;call, file="slhc/errors2/Efcomp_MQYL.madx";     ! new Q5 in IR1/5/6
+eoption,seed=myseed+106;call, file="slhc/errors2/Efcomp_MCBXFAB.madx";  ! new triplet correctors in IR1/5
 ON_B2s = 0; ON_B2r = 0;
-eoption,seed=myseed+103;call, file="slhc/errors2/Efcomp_MBRD.madx";     ! new D2 in IR1/5
+eoption,seed=myseed+107;call, file="slhc/errors2/Efcomp_MBH.madx";
+
 !exec show_error_newHLmagnet;
-
-
-call, file="slhc/errors2/Efcomp_MBH.madx";
 
 !select, flag=error, clear;
 !select, flag=error, pattern=".";
@@ -767,9 +771,10 @@ if (NRJ>5000.0000)
  select, flag=error, pattern=MBX,  class=multipole;
  select, flag=error, pattern=MBRC, class=multipole;
  select, flag=error, pattern=MBRD, class=multipole;
- select, flag=error, pattern=MCBXF,class=multipole;
+ !select, flag=error, pattern=MCBXF, class=multipole;
  esave,  file="temp/tripD1D2.errors";
  system, "slhc/errors2/corr_tripD1_v5";
+
  call,   file="temp/MCX_setting.mad";
 !kcsx3.l1:=0 ;kcsx3.r1:=0 ;kcsx3.l5:=0 ;kcsx3.r5:=0 ; !switch off b3  correction in IR1 and IR5
 !kcox3.l1:=0 ;kcox3.r1:=0 ;kcox3.l5:=0 ;kcox3.r5:=0 ; !switch off b4  correction in IR1 and IR5
@@ -791,6 +796,12 @@ if (NRJ>5000.0000)
 !exec reset_MQX_corr;                             !switch off all IT multipole correction in all IR's
 };
 
+! Remove the average errors and assign the real errors of D2
+use_average_errors_MBRD=0;
+call,file="slhc/errors2/D2_errortable_v5";
+eoption,add=false;
+eoption,seed=myseed+103;
+call, file="slhc/errors2/Efcomp_MBRD.madx"; 
 
 !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 !    correct orbit distortion resulting from other magnets
@@ -913,7 +924,11 @@ value, table(summ,dq2);
 sixtrack,cavall, radius=0.017;
 
 select, flag=twiss, clear;
-twiss,file="last_twiss.%SEEDRAN";
-System,"gzip last_twiss.%SEEDRAN";
-!emit;
+if (this_is_a_mask==1){
+  twiss,file="last_twiss.%SEEDRAN";
+  System,"gzip last_twiss.%SEEDRAN";
+} else {
+  twiss,file="last_twiss.1";
+  System,"gzip last_twiss.1";
+};
 stop;
